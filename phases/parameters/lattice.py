@@ -1,4 +1,6 @@
 from lmfit import Parameter
+from utils.cif_extract import keyword_value
+
 
 # Набор параметров: параметры решетки (a,b,c, alpha,beta,gamma) - *атрибут класса Phase*
 def create_par_cell(data: list[str], prefix_KPhase: str) -> dict:                                       # data - массив строк из файла cif,    prefix_KPhase = 'Phase1_', например
