@@ -20,7 +20,7 @@ def keyword_value(CIF_data: List[str], key_word: str) -> Optional[str]:
         raw_value = parts[1].strip().strip("'\"")    # Убираем кавычки
         if raw_value not in ['.', '?', '']:
           return raw_value
-    return None                                      # Если не найдено или значение пустое
+  return None                                      # Если не найдено или значение пустое
 
 
 # === РАБОТА С ТАБЛИЦАМИ loop_ ===
