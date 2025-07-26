@@ -7,6 +7,8 @@ cif_symmetry.py
 - удаление дубликатов операций симметрии.
 """
 import numpy as np
+from pymatgen.symmetry.groups import SpaceGroup
+from cif_extract import keyword_value
 
  
 def Unique_matrix(list_of_matrix):
@@ -40,21 +42,48 @@ def Unique_op_matrix(list_of_matrix):
 # Функция для получения матриц операций симметрии пространственной группы кристалла
 def get_symmetry_matrix_of_crystal_lattice(CIF_file):
   """
-  Получение операций симметрии из CIF-файла в виде [r0, G], 
-  где G — матрица поворота, r0 — вектор трансляции.
-  """ 
+  Извлекает операции симметрии из CIF-файла кристаллической структуры. 
+    
+  Если CIF-файл содержит явный список симметрий (обычно под ключом '_space_group_symop_operation_xyz'),
+  функция считывает их напрямую. Если список отсутствует, функция автоматически определяет
+  номер пространственной группы и запрашивает симметрии из базы данных через pymatgen.
+
+  Возвращает список операций в виде пар [r0, G], где:
+    - r0 (numpy.ndarray, shape (3,)) — вектор трансляции (сдвиг);
+    - G (numpy.ndarray, shape (3, 3)) — матрица поворота.
+  Порядок:
+    r1 = G @ r + r0, где r — исходный вектор координат атома, r1 — преобразованный.
+  Аргументы:
+  ----------
+  CIF_file : list of str
+      CIF-файл, прочитанный как список строк.
+  Возвращает:
+  -----------
+  List[[numpy.ndarray, numpy.ndarray]]
+      Список операций симметрии в формате [r0, G].
+  """
   # 1. Извлекаем операции симметрии
   for line in CIF_file:                                                           # Поиск начала списка операций симметрии (строка типа ' 1   x,y,z\n')
     if line.replace(' ', '').replace('\t','').replace(',', '')=='1xyz\n':
       i0=CIF_file.index(line)
+      break
+    else: i0 = None  # Если не найдено
 
   symmetry=[]
-  i=0
-  if i0+i+1<len(CIF_file):
-    while (i0 + i) < len(CIF_file) and len(CIF_file[i0+i].split())==2:
-      if CIF_file[i0+i].split()[0]==str(i+1):
-        symmetry.append(CIF_file[i0+i].split()[1:][0].split(','))
-        i=i+1
+  if i0 is not None:
+    i=0
+    if i0+i+1<len(CIF_file):
+      while (i0 + i) < len(CIF_file) and len(CIF_file[i0+i].split())==2:
+        if CIF_file[i0+i].split()[0]==str(i+1):
+          symmetry.append(CIF_file[i0+i].split()[1:][0].split(','))
+          i=i+1
+  # 1b. Если не нашли операций — получаем их из pymatgen по номеру группы
+  if not symmetry:
+    spg_number = keyword_value(CIF_file, "_symmetry_Int_Tables_number")
+    if spg_number is None:
+      raise ValueError("Не удалось найти операции симметрии и номер группы в CIF")
+    spg = SpaceGroup.from_int_number(int(spg_number))
+    symmetry = [op.as_xyz_string().replace(' ', '').split(',') for op in spg.symmetry_ops]
 
   # 2. Преобразование к формату [r0, G]
   # (Матричное представление операций симметрии  (https://mypresentation.ru/presentation/1549492142_matricy))
