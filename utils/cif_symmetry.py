@@ -8,7 +8,7 @@ cif_symmetry.py
 """
 import numpy as np
 from pymatgen.symmetry.groups import SpaceGroup
-from cif_extract import keyword_value
+from .cif_extract import keyword_value
 
  
 def Unique_matrix(list_of_matrix):
