@@ -11,20 +11,6 @@ from pymatgen.symmetry.groups import SpaceGroup
 from .cif_extract import keyword_value
 
  
-def Unique_matrix(list_of_matrix):
-  """
-  Удаление дубликатов из списка numpy матриц размером (3,3).
-  """
-  list_of_matrix=list_of_matrix                                  # На вход подаем список матриц numpy размером (3,3)
-  Unique=[]
-  for line in list_of_matrix:                                                 # Склеиваем строки матрицы в одну строку для их последующего сравнения
-    stroka=np.concatenate((line[0],line[1],line[2]), axis=0)
-    if list(stroka) not in Unique:
-      Unique.append(list(stroka))                               # Получили список с матрицами (матрица записана в виде склеенной строки)
-  list_of_unique_matrix=[np.array(i).reshape(3,3) for i in Unique]
-  return list_of_unique_matrix
-
- 
 def unique_op_matrix(ops, tol=1e-8):
     """
     Удаление дубликатов операций симметрии [r0, G] с учетом погрешности.
