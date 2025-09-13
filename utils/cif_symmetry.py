@@ -25,18 +25,27 @@ def Unique_matrix(list_of_matrix):
   return list_of_unique_matrix
 
  
-def Unique_op_matrix(list_of_matrix):
-  """
-  Удаление дубликатов операций симметрии (трансляция t, матрица поворота G).
-  """
-  list_of_matrix=list_of_matrix                                                        # На вход подаем список операция симметрии: пары { вектор трансляции numpy, матрица поворота numpy}
-  Unique=[]
-  for line in list_of_matrix:                                                          # Склеиваем векторы трансляции и строки матрицы в одну строку для их последующего сравнения
-    stroka=list(line[0])+list(np.concatenate((line[1][0],line[1][1],line[1][2]), axis=0))
-    if stroka not in Unique:
-      Unique.append(stroka)                               # Получили список с матрицами (матрица записана в виде склеенной строки)
-  list_of_unique_matrix=[[*np.array([i[:3]]), np.array([i[3:]]).reshape(3,3)] for i in Unique]       # Звездочка нужна, иначе получаем не np.array, а [np.array]
-  return list_of_unique_matrix
+def unique_op_matrix(ops, tol=1e-8):
+    """
+    Удаление дубликатов операций симметрии [r0, G] с учетом погрешности.
+    
+    Parameters
+    ----------
+    ops : list of [numpy.ndarray, numpy.ndarray]        ← Список операций симметрии [r0, G].
+    tol : float                                         ← Допуск для сравнения элементов матрицы.
+
+    Returns
+    -------
+    unique_ops : list of [numpy.ndarray, numpy.ndarray]  ← Список уникальных операций.
+    """
+    seen = set()
+    unique_ops = []
+    for r0, G in ops:
+        key = tuple(np.round(G.flatten(), decimals=int(-np.log10(tol))))   ## округляем для стабильного сравнения
+        if key not in seen:
+            seen.add(key)
+            unique_ops.append([r0.copy(), G.copy()])
+    return unique_ops
 
 
 # Функция для получения матриц операций симметрии пространственной группы кристалла
@@ -120,27 +129,22 @@ def get_symmetry_matrix_of_crystal_lattice(CIF_file):
 
 
 # Функция для получения матриц операций симметрии решетки в обратном пространстве (только точечная группа без векторов трансляций)
-def get_symmetry_matrix_of_reciprocal_lattice(CIF_file):
-  """
-  Получение операций симметрии обратной решётки (только точечная группа).
-  """
-  # 1. Берем операции симметрии пространственной группы кристалла и зануляем все векторы трансляции
-  Operations_symmetry=get_symmetry_matrix_of_crystal_lattice(CIF_file)
-  for op in Operations_symmetry:
-    op[0]=op[0]*0
+def get_symmetry_matrix_of_reciprocal_lattice(Operations_symmetry):
+    """
+    Получение операций симметрии обратной решётки (точечная группа).
+    """
+    # 1. Зануляем трансляции
+    for op in Operations_symmetry:
+        op[0] = np.zeros(3)
 
-  # 2. Удаляем дубликаты из набора операций симметрии
-  Operations_symmetry = Unique_op_matrix(Operations_symmetry)
+    # 2. Удаляем дубликаты
+    Operations_symmetry = unique_op_matrix_new(Operations_symmetry)
 
-  # 3. Умножаем элементы симметрии на операцию инверсии (количество элементов симметрии удвоилось)
-  I=np.array([[-1,0,0],[0,-1,0],[0,0,-1]])
-  Operations_symmetry_I=[]
-  for op in Operations_symmetry:
-    G=op[1]
-    G1=np.dot(G,I)
-    Operations_symmetry_I.append([op[0], G1])
-  Operations_symmetry=Operations_symmetry + Operations_symmetry_I
+    # 3. Добавляем инверсию
+    I = -np.eye(3)
+    Operations_symmetry_I = [[op[0], op[1] @ I] for op in Operations_symmetry]
+    Operations_symmetry += Operations_symmetry_I
 
-  # 4. Удаляем дубликаты из полученной матрицы (если они есть)
-  Operations_symmetry = Unique_op_matrix(Operations_symmetry)
-  return Operations_symmetry
+    # 4. Снова удаляем дубликаты
+    Operations_symmetry = unique_op_matrix(Operations_symmetry)
+    return Operations_symmetry
