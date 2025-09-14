@@ -119,12 +119,13 @@ def get_symmetry_matrix_of_reciprocal_lattice(Operations_symmetry):
     """
     Получение операций симметрии обратной решётки (точечная группа).
     """
+    ops = copy.deepcopy(Operations_symmetry)   # Делаем глубокую копию, чтобы не менять исходный список
     # 1. Зануляем трансляции
     for op in Operations_symmetry:
         op[0] = np.zeros(3)
 
     # 2. Удаляем дубликаты
-    Operations_symmetry = unique_op_matrix_new(Operations_symmetry)
+    Operations_symmetry = unique_op_matrix(Operations_symmetry)
 
     # 3. Добавляем инверсию
     I = -np.eye(3)
