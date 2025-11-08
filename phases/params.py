@@ -1,7 +1,7 @@
 from lmfit import Parameter
 from typing import Literal
 from utils.cif_extract import keyword_value
-from models_peak.models_info import par_form_dict
+from phases.models_peak.models_info import par_form_dict
 ## ========= Набор параметров ===========
 
 ## ----- Глобальные параметры фазы ------
