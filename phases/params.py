@@ -29,6 +29,9 @@ def create_param_global(prefix_KPhase: str) -> dict[str, Parameter]:
   object_name = prefix_KPhase + 'shift'
   objects[object_name] = Parameter(name=object_name, value=0, vary=False)
 
+  object_name = prefix_KPhase + 'A'      ## Для поправки по Блэкману
+  objects[object_name] = Parameter(name=object_name, value=0.0001, min=1e-6, max=2, vary=False)
+
   object_name = prefix_KPhase + 'phvol'  ## fractional volume                     (Объемное содержание дополнительной фазы по отношению к основной)
   objects[object_name] = Parameter(name=object_name, value=1, min=0, vary=False) if prefix_KPhase.replace('Phase','').replace('_','')=='1' else Parameter(name=object_name, value=0.5, min=0, vary=False)
   return objects

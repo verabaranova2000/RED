@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 ## ============= Сохранение ============= 
 def save_bragg_positions(array, filename=None, phase_object=None):
@@ -52,6 +53,18 @@ def load_bragg_positions(filename):
     for row in array:    ## Преобразуем первые 5 элементов в int (h, k, l, multiplicity, KPhase)
       for i in range(5): row[i] = int(round(row[i]))
     return array
+
+
+## ============= Путь к файлу ============= 
+def get_bragg_file(project_name, phase_prefix, data_root="RED/examples"):
+    """
+    Возвращает путь к файлу bragg_positions для заданного проекта и фазы,
+    если файл существует.
+    """
+    project_dir = os.path.join(data_root, project_name)
+    filename = f"{phase_prefix}bragg_positions.txt"
+    full_path = os.path.join(project_dir, filename)
+    return full_path if os.path.exists(full_path) else None
 
 
 # Сохранили
