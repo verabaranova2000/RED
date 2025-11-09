@@ -140,3 +140,7 @@ def read_aspher_scatfile(txt):
     parametrizations[name_of_shell]['a']=[float(a) for a in data[2*i+1].split()[1:]]
     parametrizations[name_of_shell]['b']=[float(a) for a in data[2*i+2].split()]
   return parametrizations
+
+
+
+__all__ = ["read_scatfile", "get_curve"]
