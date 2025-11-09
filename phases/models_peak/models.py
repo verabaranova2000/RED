@@ -1,11 +1,13 @@
 import numpy as np
 import math, cmath
-import matplotlib.pyplot as plt
 import scipy.special as sc
 from uncertainties import ufloat, unumpy
 
 
-## Функции формы пиков
+
+
+
+## ======== Функции формы пиков ========
 """"" 1. GaussianModel """""                                                    # Работает
 def f_Gaussian(axes,A,μ,σ,uvar=False):
   x=axes
