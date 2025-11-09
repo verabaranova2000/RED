@@ -70,6 +70,36 @@ def ADPanharmonic(h,k,l, prefix_KPhase, atom_name, order, **pars):
 
 
 
+
+## ===== Кривая рассеяния электронов (IT-параметризация) =======
+def fe(stl: float, element_ID: str) -> float:
+  """
+  Рассчитывает функцию рассеяния электронов для заданного элемента и значения (sin θ)/λ.
+  
+  Parameters
+  ----------
+  stl (float): Угловой параметр (sin θ)/λ в обратных ангстремах (Å⁻¹).
+  element_ID (str): Идентификатор элемента, например, "Na", "Ca", "F".
+  
+  Returns
+  -------
+  float: Значение функции рассеяния электронов f_e в ангстремах (Å).
+  
+  Examples
+  -----
+  print("Функция рассеяния электронов fe(1.5 Å⁻¹, Na) = %f Å"%(fe(1.5, "Na")))
+  """
+  element=PARAM["elements"][element_ID]
+
+  f=0
+  f+=element["a1"]*math.exp(-element["b1"]*stl*stl)
+  f+=element["a2"]*math.exp(-element["b2"]*stl*stl)
+  f+=element["a3"]*math.exp(-element["b3"]*stl*stl)
+  f+=element["a4"]*math.exp(-element["b4"]*stl*stl)
+  f+=element["a5"]*math.exp(-element["b5"]*stl*stl)
+  return f
+
+
 ## ========== Каппа-модель ==========
 
 def fe_el_kmodel(stl, prefix_KPhase, atom_name, curves, **pars):
@@ -179,4 +209,4 @@ def fe_el_asherical(stl, prefix_KPhase, atom_name, parametrisations, **pars):
 
 
 __all__ = ["convol_ADP_h", "ADPanharmonic",
-           "fe_el_kmodel"]
+           "fe", "fe_el_kmodel"]

@@ -181,32 +181,3 @@ if "elements_table" in PARAM:
  print("")
  print("Всего химических элементов: %d"%(len(PARAM["elements"])))
  print("")
-
-
-
-
-
-# Кривая рассеяния электронов для элемента element_ID и углового параметра (sin θ)/λ
-# Результат получается в Å
-def fe(stl: float, element_ID: str) -> float:
-  """
-  Рассчитывает функцию рассеяния электронов для заданного элемента и значения (sin θ)/λ.
-  Параметры:
-  stl (float): Угловой параметр (sin θ)/λ в обратных ангстремах (Å⁻¹).
-  element_ID (str): Идентификатор элемента, например, "Na", "Ca", "F".
-  Возвращает:
-  float: Значение функции рассеяния электронов f_e в ангстремах (Å).
-  """
-  element=PARAM["elements"][element_ID]
-  
-  f=0
-  f+=element["a1"]*math.exp(-element["b1"]*stl*stl)
-  f+=element["a2"]*math.exp(-element["b2"]*stl*stl)
-  f+=element["a3"]*math.exp(-element["b3"]*stl*stl)
-  f+=element["a4"]*math.exp(-element["b4"]*stl*stl)
-  f+=element["a5"]*math.exp(-element["b5"]*stl*stl)
-  return f
-
-
-
-#print("Функция рассеяния электронов fe(1.5 Å⁻¹, Na) = %f Å"%(fe(1.5, "Na")))
