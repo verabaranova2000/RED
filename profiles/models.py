@@ -1,5 +1,6 @@
 import jax.numpy as jnp  # type: ignore
 import numpy as np
+from lmfit.models import SplineModel
 from utils.format import get_value
 
 ## ======== Модель: полиномы Лежандра ========
@@ -54,3 +55,29 @@ def Background(axes, **pars):
     # --- Векторизованное суммирование: bckg_n * P_n(x) ---
     B = jnp.sum(jnp.array([coef * P_legendre(n, x) for n, coef in zip(degrees, coefs)]), axis=0)
     return np.array(B)
+
+
+
+
+## ====== Сплайн =========
+def Spline(axes, xknots_str=None, **pars):
+  """
+  Вычисляет сплайн-функцию по заданным узлам и параметрам (обертка для спайна из lmfit).
+
+  Parameters
+  ----------
+  axes : array-like          ← Массив значений независимой переменной (например, 2θ или s = sinθ/λ).
+  xknots_str : str, optional ← Строка с координатами узлов сплайна, разделёнными символом '_'.
+  **pars : dict              ← Параметры сплайна, включая значения в узлах (lmfit Parameters).
+
+  Returns
+  -------
+  ndarray                    ← Значения сплайн-функции S(x) на сетке `axes`.
+  """
+  knot_xvals = [float(x) for x in xknots_str.split('_')]
+  mod        = SplineModel(xknots=knot_xvals)
+  pars_for_spline = mod.make_params()
+  for k,v in pars_for_spline.items():
+     pars_for_spline[k].value = pars[k]
+  S = mod.eval(params=pars_for_spline, x=axes)
+  return S
