@@ -1,11 +1,11 @@
 import jax.numpy as jnp  # type: ignore
 import numpy as np
-from utils.formats import get_value
+from utils.format import get_value
 
 ## ======== Модель: полиномы Лежандра ========
 
 ## --- Полиномы Лежандра P(n,x) ---
-def P(n,x):
+def P_legendre(n,x):
   poly_map = {             # словарь "степень: функция"
   0: lambda x: jnp.ones_like(x),
   1: lambda x: x,
@@ -52,5 +52,5 @@ def Background(axes, **pars):
     degrees, coefs = zip(*bckg_items)
     coefs          = jnp.array(coefs)
     # --- Векторизованное суммирование: bckg_n * P_n(x) ---
-    B = jnp.sum(jnp.array([coef * P(n, x) for n, coef in zip(degrees, coefs)]), axis=0)
+    B = jnp.sum(jnp.array([coef * P_legendre(n, x) for n, coef in zip(degrees, coefs)]), axis=0)
     return np.array(B)
