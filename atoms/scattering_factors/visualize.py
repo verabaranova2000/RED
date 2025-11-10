@@ -2,7 +2,6 @@ import numpy as np
 import gemmi
 import re
 import plotly.graph_objects as go
-from atoms.models import fe, fe_el_kmodel, f_ab8, fe_el_asherical
 from atoms.scattering_factors.parametric_factors import PARAM
 
 
@@ -103,6 +102,7 @@ def view_electron_form_factors(atom_name, prefix_KPhase, curves, experimental_st
   - Используется интерактивная визуализация Plotly с возможностью масштабирования и
     отображения экспериментальных точек.
   """
+  from atoms.models import fe, fe_el_kmodel
   atom=re.sub("[^A-Za-z]", "", atom_name)
   title_of_fig='Atom "'+atom+'":  Relativistic electron scattering factors for neutral atom from IT and kappa-model'
   config = {'scrollZoom': True}
@@ -141,6 +141,7 @@ def view_electron_form_factors(atom_name, prefix_KPhase, curves, experimental_st
   
   ## --- Если применяем асферическую добавку: ---
   if aspherical==True and parametrisations!=None:
+    from atoms.models import f_ab8, fe_el_asherical
     x=curves['neutral atom']['x']
     for k,v in parametrisations.items():
       name_of_trace='aspherical model: '+k+ ' (normalized)' if k not in ['neutral atom', 'core'] else 'aspherical model: '+k
