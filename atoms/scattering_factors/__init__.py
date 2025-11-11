@@ -1,3 +1,3 @@
 from atoms.scattering_factors.parametric_factors import PARAM
-from atoms.scattering_factors.read import read_scatfile, get_curve
+from atoms.scattering_factors.read import block_format, read_scatfile, get_curve
 from atoms.scattering_factors.visualize import view_X_ray_form_factors, view_electron_form_factors
