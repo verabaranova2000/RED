@@ -1,7 +1,7 @@
 Core subshells:
   1s   2s   2p-  2p   3s   3p-  3p 
 
-Valence  subshells:
+Valence subshells:
   3d-  3d   4s 
 
 Populations:
