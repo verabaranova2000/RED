@@ -91,7 +91,7 @@ def read_scatfile(txt):
   with open (file_name) as file:
     for line in file:
       data.append(line)
-  data = block_format(data)
+  # data = block_format(data)     ## НЕУДАЧНЫЙ ХОД 
   ## --- 2. Разбиение файла на блоки ---
   indexes=[]
   for i in range(len(data)):
