@@ -6,6 +6,62 @@ import numpy as np
 
 ## ============ Чтение Coppens ============
 
+## ====== Проверка/исправление разделительных строк ======
+def block_format(data):
+  """
+  Приводит текстовый массив данных атома к стандартному формату.
+
+  Обеспечивает корректное наличие и отсутствие пустых строк вокруг заголовков:
+  'Core subshells', 'Valence subshells' и 'Populations', удаляя лишние пустые строки 
+  и вставляя отсутствующие, чтобы каждый блок был однозначно разделён.
+
+  Parameters
+  ----------
+  data : list of str   ← Список строк файла с параметрами атома.
+
+  Returns
+  -------
+  list of str          ← Список строк с исправленным форматированием заголовков и блоков.
+  """
+  titles_idx = [i for i, line in enumerate(data) 
+              if ("Core subshells" in line) 
+              or ("Valence subshells" in line) 
+              or ("Populations" in line)]
+  ## Уберем лишние пропуски после заголовков "Core subshells", Valence subshells""
+  while data[titles_idx[0]+1].strip() == '':
+    del data[titles_idx[0]+1]
+    titles_idx[1] -=1
+    titles_idx[2] -=1
+  while data[titles_idx[1]+1].strip() == '':
+    del data[titles_idx[1]+1]
+    titles_idx[2] -=1
+  ## Проверка пропусков перед и после Valence subshells
+  if data[titles_idx[1]-1].strip() != '':
+    #print('Перед Valence subshells нет enter! Надо добавить!')
+    data.insert(titles_idx[1], '\n')
+    titles_idx[1] +=1
+    titles_idx[2] +=1
+  else: 
+    i=1
+    while data[titles_idx[1]-1-1].strip() == '':
+      del data[titles_idx[1]-1-1]
+      titles_idx[1] -=1
+      titles_idx[2] -=1
+  ## Проверка пропусков перед и после Populations
+  if data[titles_idx[2]-1].strip() != '':
+    #print('Перед Populations нет enter! Надо добавить!')
+    data.insert(titles_idx[2], '\n')
+    titles_idx[2] +=1
+  else: 
+    i=1
+    while data[titles_idx[2]-1-1].strip() == '':
+      del data[titles_idx[2]-1-1]
+      titles_idx[2] -=1
+  if data[titles_idx[2]+1].strip() != '':
+    #print('После Populations нет enter! Надо добавить!')
+    data.insert(titles_idx[2]+1, '\n')
+  return data
+
 
 ## ====== Чтение информации об атоме ======
 def read_scatfile(txt):                  
@@ -35,6 +91,7 @@ def read_scatfile(txt):
   with open (file_name) as file:
     for line in file:
       data.append(line)
+  data = block_format(data)
   ## --- 2. Разбиение файла на блоки ---
   indexes=[]
   for i in range(len(data)):
@@ -143,4 +200,4 @@ def read_aspher_scatfile(txt):
 
 
 
-__all__ = ["read_scatfile", "get_curve"]
+__all__ = ["block_format", "read_scatfile", "get_curve"]
