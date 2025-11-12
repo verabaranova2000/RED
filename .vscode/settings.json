@@ -1,0 +1,6 @@
+{
+  "python.analysis.exclude": [
+    "diagnostics",
+    "**/.ipynb_checkpoints"
+  ]
+}

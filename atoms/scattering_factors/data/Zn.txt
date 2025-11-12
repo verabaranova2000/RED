@@ -1,4 +1,5 @@
-Core subshells:   3d-  3d 
+Core subshells: 
+  3d-  3d 
 
 Valence subshells:
   3d-  3d   4s 
