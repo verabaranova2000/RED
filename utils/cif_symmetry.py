@@ -78,7 +78,7 @@ def get_symmetry_matrix_of_crystal_lattice(CIF_file):
     if spg_number is None:
       raise ValueError("Не удалось найти операции симметрии и номер группы в CIF")
     spg = SpaceGroup.from_int_number(int(spg_number))
-    symmetry = [op.as_xyz_string().replace(' ', '').split(',') for op in spg.symmetry_ops]
+    symmetry = [op.as_xyz_str().replace(' ', '').split(',') for op in spg.symmetry_ops]
 
   # 2. Преобразование к формату [r0, G]
   # (Матричное представление операций симметрии  (https://mypresentation.ru/presentation/1549492142_matricy))
