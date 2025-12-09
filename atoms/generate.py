@@ -1,4 +1,4 @@
-#@title Таблица атомов
+# ---- Генерация симметричных атомов и таблица ----
 
 import numpy as np
 import pandas as pd
@@ -6,10 +6,69 @@ from fractions import Fraction
 from IPython.display import HTML, display
 
 def _pbc_dist(a, b):
-    """Минимальное образное расстояние между fractional coords a и b."""
+    """
+    Минимальное образное расстояние между fractional coords a и b.
+    Расстояние — евклидово ∥d∥
+    Это стандартный и канонический способ вычислять расстояния с PBC (периодические граничные условия).
+    """
     d = np.array(a) - np.array(b)
     d = d - np.round(d)   # приводим к интервалу [-0.5, 0.5)
     return np.linalg.norm(d)
+
+
+def get_all_positions_in_cell_for_atom(x,y,z, Operations_symmetry, tolerance=0.005):         # На вход: координаты атома, матрицы операций симметрии
+    """
+    Генерация всех симметричных положений одного атома в элементарной ячейке.
+
+    Позиции атома размножаются всеми операциями симметрии кристаллической решётки,
+    после чего приводятся к диапазону [0, 1) в дробных координатах и исключаются дубликаты,
+    считая позиции совпадающими, если расстояние между ними меньше заданной точности.
+
+    Параметры
+    ----------
+    x, y, z : float
+        Дробные координаты атома в исходной ячейке.
+    Operations_symmetry : list
+        Список операций симметрии кристалла. Каждая операция задаётся как кортеж 
+        (трансляция, матрица поворота).
+    tolerance : float, optional
+        Максимальное расстояние между позициями, при котором они считаются эквивалентными 
+        (по умолчанию 0.005).
+
+    Возвращает
+    -------
+    result : list of np.ndarray
+        Список уникальных координат атома, учтённых с периодическими граничными условиями.
+    
+    Example:
+    -------
+    ops_sym = get_symmetry_matrix_of_crystal_lattice(cif_data)
+    xyz_for_atom = get_all_positions_in_cell_for_atom(0.5, 0.5, 0.5, ops_sym)
+    """
+    x,y,z,Operations_symmetry=x,y,z,Operations_symmetry
+    position      = np.array([x,y,z])                                                # Позиция атома, которую будем размножать операциями симметрии
+    all_positions = [position]
+    # --- 1. Размножение атомной позиции операциями симметрии ---
+    for i in range(len(Operations_symmetry)):                                   # Размножаем атомы всеми операциями симметрии
+      new_xyz = Operations_symmetry[i][1].dot(position[..., None])              # Умножение столбца (атомную позицию) на оператор поворота G
+      new_xyz = new_xyz.transpose()[0]                                          # Превращаем столбец в строку
+      new_xyz = new_xyz+Operations_symmetry[i][0]                               # Прибавляем вектор трансляции
+      all_positions.append(new_xyz)
+    # --- 2. Приведение всех координат в диапазон [0, 1) ---
+    all_positions = [pos % 1.0 for pos in all_positions]
+    # --- 3. Исключение дубликатов ---
+    result = []
+    for pos in all_positions:
+        if not any(_pbc_dist(pos, r) < tolerance for r in result):
+            result.append(pos)
+    return result
+
+
+
+
+
+
+# ========= Таблица ===================
 
 def _format_coord(x, max_den=24, tol=1e-5):
     """Пытаемся представить координату как простую дробь (1/3, 3/4 и т.п.), иначе 6 знаков."""
