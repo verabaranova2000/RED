@@ -83,7 +83,8 @@ def _format_coord(x, max_den=24, tol=1e-5):
         return f"{frac.numerator}/{frac.denominator}"
     return f"{xf:.6f}"
 
-def print_atoms_table(XYZ, ineq_idxs, title="Atomic positions (wyckoff placeholders)"):
+def print_atoms_table(XYZ, ineq_idxs, wyckoffs=None,
+                      title="Atomic positions (wyckoff placeholders)"):
     """
     Формирует и отображает интерактивную HTML-таблицу атомных позиций с группировкой
     по неэквивалентным атомам.
@@ -156,6 +157,11 @@ def print_atoms_table(XYZ, ineq_idxs, title="Atomic positions (wyckoff placehold
     for atom_idx, rep_idx in owner.items():
         members_by_rep.setdefault(rep_idx, []).append(atom_idx)
 
+    # --- Определяем, включать ли колонку Wyckoff ---
+    include_wyck = wyckoffs is not None and len(wyckoffs) == len(XYZ)   
+    # Определяем название первого столбца
+    first_col_name = "Wyckoff" if include_wyck else "Multiplicity"
+
     # Соберём HTML таблицу
     html = f"""
     <style>
@@ -182,56 +188,68 @@ def print_atoms_table(XYZ, ineq_idxs, title="Atomic positions (wyckoff placehold
     <div style="margin-bottom:8px; font-weight:700;">{title}</div>
     <table class="ep-table">
       <thead>
-        <tr><th style="width:60px">Wyckoff</th><th style="width:110px">Element</th><th>x</th><th>y</th><th>z</th><th style="width:60px">#</th></tr>
+        <tr><th style="width:60px">{first_col_name}</th><th style="width:110px">Element</th><th>x</th><th>y</th><th>z</th>
       </thead>
       <tbody>
     """
-
     # порядок вывода: по порядку ineq_idxs
     for rep_idx in ineq_idxs:
         if rep_idx not in members_by_rep:
             continue
         rep_row = df.iloc[rep_idx]
         members = sorted(members_by_rep[rep_idx])
-        # wyckoff заглушка: оставим '-'
-        wyckoff = "—"
+        # ---- wyckoff ----
+        wyckoff = wyckoffs[rep_idx] if include_wyck else "—"  # если передан список — берём букву для репа, иначе заглушка
+
         # краткие координаты репа
         x_s = _format_coord(rep_row["x"])
         y_s = _format_coord(rep_row["y"])
         z_s = _format_coord(rep_row["z"])
         # строка видимая
         uid = f"rep_{rep_idx}"
+        # --- первый столбец: Wyckoff или кратность ---
+        first_col = str(len(members))+wyckoffs[rep_idx] if include_wyck else len(members)
+
         html += f"""
         <tr>
-          <td>{wyckoff}</td>
+          <td style="text-align:center">{first_col}</td>
           <td class="element-cell">
             <button onclick="toggleChild('{uid}')">{rep_row['element']}</button>
           </td>
           <td>{x_s}</td>
           <td>{y_s}</td>
           <td>{z_s}</td>
-          <td style="text-align:center">{len(members)}</td>
         </tr>
         """
         # строка с вложенной таблицей (скрытая по умолчанию)
-        # вложенная таблица: индекс | x y z | distance-to-rep (periodic)
+        # ---- вложенная таблица: индекс | x y z | distance-to-rep (periodic) ---
         child_html = f"""
         <tr id="{uid}" class="child-row" style="display:none">
-          <td colspan="6">
+          <td colspan="{7 + int(include_wyck)}">
             <table class="nested-table">
-              <thead><tr><th style="width:40px">#</th><th style="width:45px">idx</th><th>element</th><th>x</th><th>y</th><th>z</th><th style="width:90px">Δ to rep</th></tr></thead>
-              <tbody>
+              <thead>
+                <tr>
         """
+        if include_wyck:
+            child_html += "<th style='width:55px'>Wyckoff</th>"
+        child_html += "<th style='width:40px'>#</th><th style='width:45px'>idx</th><th>element</th><th>x</th><th>y</th><th>z</th><th style='width:90px'>Δ to rep</th></tr></thead><tbody>"
+
+        # строки атомов
         for i, aidx in enumerate(members, start=1):
             r = df.iloc[aidx]
             ds = _pbc_dist(coords[aidx], coords[rep_idx])
-            child_html += f"<tr><td style='text-align:center'>{i}</td><td style='text-align:center'>{aidx}</td><td>{r['element']}</td>"
-            child_html += f"<td>{_format_coord(r['x'])}</td><td>{_format_coord(r['y'])}</td><td>{_format_coord(r['z'])}</td>"
-            child_html += f"<td style='text-align:right'>{ds:.6f}</td></tr>"
-
+            wyck_td = f"<td style='text-align:center'>{wyckoffs[aidx]}</td>" if include_wyck else ""
+            child_html += ( f"<tr>{wyck_td}"
+                            f"<td style='text-align:center'>{i}</td>"
+                            f"<td style='text-align:center'>{aidx}</td>"
+                            f"<td>{r['element']}</td>"
+                            f"<td>{_format_coord(r['x'])}</td>"
+                            f"<td>{_format_coord(r['y'])}</td>"
+                            f"<td>{_format_coord(r['z'])}</td>"
+                            f"<td style='text-align:right'>{ds:.6f}</td>"
+                            f"</tr>" )
         child_html += "</tbody></table></td></tr>"
         html += child_html
-
     html += "</tbody></table>"
 
     # JS для переключения
