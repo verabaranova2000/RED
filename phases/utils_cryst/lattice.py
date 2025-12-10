@@ -85,7 +85,7 @@ def compute_wyckoffs(lattice_vectors, coords, symbols, symprec=1e-2):
     s = Structure(lattice=lattice_vectors, species=symbols, coords=coords)
     sg = SpacegroupAnalyzer(s, symprec=symprec)
     dataset = sg.get_symmetry_dataset()
-    return dataset["wyckoffs"]
+    return dataset.wyckoffs
 
 
 
