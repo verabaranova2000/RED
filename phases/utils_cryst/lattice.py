@@ -1,6 +1,65 @@
 import numpy as np
 import math
 
+import numpy as np
+
+def lattice_vectors_from_cell(a, b, c, alpha, beta, gamma, to_Bohr=False, verbose = False):
+    """
+    Вычисляет прямые (декартовы) векторы решётки по параметрам элементарной ячейки.
+
+    Параметры
+    ----------
+    a, b, c : float
+        Длины векторов элементарной ячейки (в ангстремах).
+    alpha, beta, gamma : float
+        Межвекторные углы (в градусах):
+        alpha = ∠(b, c), beta = ∠(a, c), gamma = ∠(a, b).
+    to_Bohr : bool, optional
+        Если True, все длины (a, b, c) перед вычислением векторов
+        переводятся из ангстремов в боры.  
+        Используется для совместимости с квантово-химическими и
+        электронно-структурными кодами, работающими в атомных единицах.
+        Константа пересчёта: 1 Bohr = 0.529177210903 Å.
+    verbose : bool, optional
+        Если True, печатает полученные векторы решётки в удобочитаемой форме.
+
+    Возвращает
+    ----------
+    np.ndarray shape (3, 3)
+        Матрица, содержащая три прямых вектора решётки в декартовой системе координат.
+        Формат:
+            [[ax, ay, az],
+             [bx, by, bz],
+             [cx, cy, cz]]
+    """
+    # --- Перевод результата Å в боры ---
+    if to_Bohr: 
+      a0_in_A = 0.529177210903
+      a, b, c = [ai/a0_in_A for ai in [a,b,c]]
+    # --- Перевод углов в радианы ---
+    alpha = np.radians(alpha)
+    beta  = np.radians(beta)
+    gamma = np.radians(gamma)
+    # --- Координаты a1 ---
+    a1 = np.array([a, 0.0, 0.0])
+    # --- Координаты a2 ---
+    a2 = np.array([b * np.cos(gamma),
+                   b * np.sin(gamma),
+                   0.0])
+    # --- Вычисление компонента a3_z ---
+    # Формула из International Tables:
+    cz = c * np.sqrt(1- np.cos(beta)**2 - ((np.cos(alpha) - np.cos(beta) * np.cos(gamma)) / np.sin(gamma))**2)
+    # --- Координаты a3 ---
+    a3 = np.array([c * np.cos(beta),
+                   c * (np.cos(alpha) - np.cos(beta) * np.cos(gamma)) / np.sin(gamma),
+                   cz])
+    vecs = np.vstack([a1, a2, a3])
+
+    if verbose: 
+      for line in vecs: print([round(float(ci), 3) for ci in line])
+    return vecs
+
+
 ## ====== Межплоскостные расстояния ======
 def d_hkl(h,k,l, a,b,c,alpha,beta,gamma):
   """
