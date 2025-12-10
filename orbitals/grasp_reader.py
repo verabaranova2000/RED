@@ -42,7 +42,7 @@ def read_occupations_from_grasp_sum(filename):
 
 # ==== Чтение орбиталей ====
 
-def read_rwfn_plot(filename, verbose = True):
+def c(filename, verbose = True):
     """
     Читает файл rwfn.plot.
 
