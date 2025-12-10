@@ -41,7 +41,6 @@ def read_occupations_from_grasp_sum(filename):
 
 
 # ==== Чтение орбиталей ====
-
 def read_rwfn_plot(filename, verbose = True):
     """
     Читает файл rwfn.plot.
@@ -58,6 +57,7 @@ def read_rwfn_plot(filename, verbose = True):
 
     with open(filename, 'r') as f:
         header = f.readline().strip()
+
     data = np.loadtxt(filename, skiprows=1)
     r = data[:, 0]
     cols = header.split()
@@ -66,12 +66,14 @@ def read_rwfn_plot(filename, verbose = True):
     orbital_names = []
     P_dict = {}
     Q_dict = {}
+
     for i in range(n_orbitals):
         token = cols[1 + 2*i]
         if '(' in token and ')' in token:
             nm = token[token.find('(')+1:token.find(')')]
         else:
             nm = token.strip()
+
         orbital_names.append(nm)
         P_dict[nm] = data[:, 1 + 2*i]
         Q_dict[nm] = data[:, 1 + 2*i + 1]
@@ -80,3 +82,4 @@ def read_rwfn_plot(filename, verbose = True):
       print("Найденные орбитали (в порядке колонок):")
       print(orbital_names)
     return r, orbital_names, P_dict, Q_dict
+
