@@ -1,8 +1,11 @@
 import numpy as np
 import math
+from pymatgen.core import Structure
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
-import numpy as np
 
+
+# ========= Векторы решетки ===============
 def cell_to_lattice_vectors(a, b, c, alpha, beta, gamma, to_Bohr=False, verbose = False):
     """
     Вычисляет прямые (декартовы) векторы решётки по параметрам элементарной ячейки.
@@ -58,6 +61,32 @@ def cell_to_lattice_vectors(a, b, c, alpha, beta, gamma, to_Bohr=False, verbose 
     if verbose: 
       for line in vecs: print([round(float(ci), 3) for ci in line])
     return vecs
+
+
+# =========== Символы Wyckoff ====================
+def compute_wyckoffs(lattice_vectors, coords, symbols, symprec=1e-2):
+    """
+    Возвращает список Вайкоффских обозначений для атомов структуры.
+
+    Параметры:
+        lattice_vectors : array (3×3)
+            Прямые векторы решётки в Å.
+        coords : list of [x, y, z]
+            Фракционные координаты всех атомов.
+        symbols : list of str
+            Химические символы.
+        symprec : float
+            Чувствительность при определении симметрии.
+
+    Возвращает:
+        list[str]:
+            Список букв Вайкоффа для каждого атома.
+    """
+    s = Structure(lattice=lattice_vectors, species=symbols, coords=coords)
+    sg = SpacegroupAnalyzer(s, symprec=symprec)
+    dataset = sg.get_symmetry_dataset()
+    return dataset["wyckoffs"]
+
 
 
 ## ====== Межплоскостные расстояния ======
