@@ -83,7 +83,7 @@ def _format_coord(x, max_den=24, tol=1e-5):
         return f"{frac.numerator}/{frac.denominator}"
     return f"{xf:.6f}"
 
-def print_equiv_atoms(XYZ, ineq_idxs, title="Atomic positions (wyckoff placeholders)"):
+def print_atoms_table(XYZ, ineq_idxs, title="Atomic positions (wyckoff placeholders)"):
     """
     Формирует и отображает интерактивную HTML-таблицу атомных позиций с группировкой
     по неэквивалентным атомам.
