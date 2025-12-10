@@ -3,7 +3,7 @@ import math
 
 import numpy as np
 
-def lattice_vectors_from_cell(a, b, c, alpha, beta, gamma, to_Bohr=False, verbose = False):
+def cell_to_lattice_vectors(a, b, c, alpha, beta, gamma, to_Bohr=False, verbose = False):
     """
     Вычисляет прямые (декартовы) векторы решётки по параметрам элементарной ячейки.
 
