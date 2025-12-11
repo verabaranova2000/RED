@@ -47,20 +47,23 @@ def build_rho_core(rho_orbs, occupations, valence_list):
     -------
     rho_core : ndarray
         Электронная плотность ядра.
-    rho_val_dict : dict[str, ndarray]
-        Отдельные вклады каждой валентной оболочки (по одной).
+    rho_val_occ : dict[str, ndarray]
+        Отдельные вклады каждой валентной оболочки с учетом заселенности.
+    rho_val_1e : dict[str, ndarray]
+        ρ для каждой валентной орбитали на 1 электрон (без умножения на occ) 
     """
 
     rho_core = np.zeros_like(next(iter(rho_orbs.values())))
-    rho_val_dict = {}
+    rho_val_occ = {}
 
     for nm, rho in rho_orbs.items():
         base = nm.replace('-', '').replace('+', '')
 
         if any(base.startswith(v) for v in valence_list):
-            rho_val_dict[nm] = occupations[nm] * rho
+            rho_val_occ[nm] = occupations[nm] * rho
         else:
             rho_core += occupations[nm] * rho
-
-    return rho_core, rho_val_dict
+    # --- ρ для каждой валентной орбитали без умножения ---
+    rho_val_1e = {nm: rho_orbs[nm] for nm in rho_val_occ.keys()}
+    return rho_core, rho_val_occ, rho_val_1e
 
