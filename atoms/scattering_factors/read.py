@@ -64,7 +64,7 @@ def block_format(data):
 
 
 ## ====== Чтение информации об атоме ======
-def read_scatfile(txt):                  
+def read_scatfile(path):                  
   """
   Считывает файл с параметрами атома, содержащий электронную структуру и амплитуды 
   рассеяния по оболочкам (ядро, валентная зона, нейтральный атом).
@@ -76,7 +76,7 @@ def read_scatfile(txt):
 
   Parameters
   ----------
-  txt : str       ← Путь к файлу или имя файла с данными атома (формат *.txt*).
+  path : str       ← Путь к файлу или имя файла с данными атома (формат *.txt*).
 
   Returns
   -------
@@ -86,7 +86,7 @@ def read_scatfile(txt):
       - 'curves'  — набор кривых рассеяния (нейтральный атом, ядро, отдельные оболочки).
   """
   ## --- 1. Чтение файла ---
-  file_name=txt
+  file_name=path
   data=[]
   with open (file_name) as file:
     for line in file:
@@ -149,7 +149,7 @@ def get_curve(index1,index2,data,name_curve,color,dash=None): #dash='dash'
         - 'trace' — объект ``plotly.graph_objects.Scatter`` для визуализации.
   """
   curve=[]
-  if index2==None: index2=len(data)
+  if index2 is None: index2=len(data)
   for i in range(index1+1,index2):
     curve = curve+data[i].replace('\n','').split('  ')
   curve = np.array([float(i) for i in curve if i not in ['']])
@@ -163,14 +163,14 @@ def get_curve(index1,index2,data,name_curve,color,dash=None): #dash='dash'
 # ============ Чтение Aspherical ============
 
 ## ===== Чтение параметризации кривых рассеяния для электронов (aspherical)
-def read_aspher_scatfile(txt):                   
+def read_aspher_scatfile(path):                   
   """
   Считывает параметры аппроксимации кривых электронного рассеяния 
   для асферических атомных моделей из текстового файла.
 
   Parameters
   ----------
-  txt : str    Имя текстового файла (формат .txt), содержащего коэффициенты 
+  path : str    Имя текстового файла (формат .txt), содержащего коэффициенты 
                параметризации в виде рядов a_i и b_i.
 
   Returns
@@ -178,7 +178,7 @@ def read_aspher_scatfile(txt):
   dict        Словарь с параметрами вида {'shell': {'a': [...], 'b': [...]}}, 
               включающий данные для нейтрального атома, ядра и валентных оболочек.
   """
-  file_name=txt
+  file_name=path
   data=[]
   with open (file_name) as file:
     for line in file:
