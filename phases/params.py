@@ -2,6 +2,13 @@ from lmfit import Parameter
 from typing import Literal
 from utils.cif_extract import keyword_value
 from phases.models import par_form_dict
+
+
+def hkl_to_str(hkl):
+    return '_'.join(f"m{-i}" if i<0 else str(i) for i in hkl)
+
+
+
 ## ========= Набор параметров ===========
 
 ## ----- Глобальные параметры фазы ------
@@ -54,7 +61,7 @@ def create_par_intensity(data_hkl: list[list[float]], prefix_KPhase: str) -> dic
   data_hkl      = data_hkl
   objects = {}
   for line in data_hkl:
-    object_name = prefix_KPhase + 'I_'+str(line[0])+'_'+str(line[1])+'_'+str(line[2])
+    object_name = prefix_KPhase + 'I_' + hkl_to_str(line[:3])
     objects[object_name] = Parameter(object_name)
 
     objects.get(object_name).value = float(line[8])
@@ -135,9 +142,6 @@ def create_par_profile(prefix_KPhase: str, form: FORM, ampl: bool = False, cente
 
 
 ## ----- Поправки к положеням пиков ------- 
-def hkl_to_str(hkl):
-    return '_'.join(f"m{-i}" if i<0 else str(i) for i in hkl)
-
 def create_par_delta(data_hkl: list[list[float]], prefix_KPhase: str) -> dict[str, Parameter]:                              # data_hkl - формат Bragg Positions
   """
   Создаёт параметры сдвига положений пиков δ_hkl для калибровки шкалы.
@@ -153,7 +157,7 @@ def create_par_delta(data_hkl: list[list[float]], prefix_KPhase: str) -> dict[st
   data_hkl      = data_hkl
   objects = {}
   for line in data_hkl:
-    object_name = prefix_KPhase + 'I_' + hkl_to_str(line[:3])
+    object_name = prefix_KPhase + 'delta_' + hkl_to_str(line[:3])
     objects[object_name] = Parameter(object_name)
 
     objects.get(object_name).value = 0
