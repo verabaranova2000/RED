@@ -5,6 +5,44 @@ from .param_utils import val_delta_percent
 
 # ==== Исполнитель шага "fit" ====
 def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, depth: int, step_path: str):
+    """
+    Исполнитель отдельного шага типа 'fit'.
+
+    Выполняет уточнение параметров профиля для одного шага,
+    применяет pre-хуки, вычисляет сегмент подгонки, запускает
+    модель и фиксирует результаты в сессии.
+
+    Аргументы
+    ---------
+    step : StepModel
+        Объект шага с типом 'fit', параметрами, сегментом и хуками.
+    pr : Project
+        Объект с данными I_obs, I_calc и моделью для подгонки.
+    out_prev : Any
+        Результат предыдущего шага (для передачи параметров по цепочке).
+    session : RefinementSession
+        Сессия для логирования, накопления истории и отчётов.
+    depth : int
+        Глубина вложенности шага (для логирования и визуальной структуры).
+    step_path : str
+        Уникальный идентификатор текущего шага в иерархии схемы.
+
+    Возвращает
+    -------
+    out : ModelResult из библиотеки lmfit (результат выполнения fit)
+        Объект с уточнёнными параметрами, рассчитанными значениями
+        модели и другой информацией о подгонке.
+
+    Исключения
+    ----------
+    ValueError : при некорректных данных в step или failure модели fit.
+    
+    Примечания
+    ---------
+    - Для pre-хука 'fix_all_except' фиксируются все параметры, кроме указанных.
+    - Расчёт метрики Rp и отчёт о параметрах выполняется через session.
+    - Функция не изменяет саму схему. Обновляет параметры объекта Project и сессию.
+    """
     # --- pre hooks ---
     if step.pre:
         for hook in step.pre:
@@ -52,19 +90,56 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
 
 
 
-# ==== Исполнитель всех шагов (типа "fit" и "strategy") в цикле ====
-def execute_strategy(strategy_steps, pr, out_prev, session, depth=0, path=""):
-  for step in strategy_steps:
-    step_path = f"{path}.{step.step_id}" if path else step.step_id
-    if step.type == "fit":
-      out_prev = execute_step(step, pr, out_prev, session, depth=depth, step_path=step_path)
+# Исполнитель всех шагов
+def execute_schema(schema_steps, pr, out_prev, session, depth=0, path=""):
+    """
+    Исполнитель схемы шагов refinement.
+
+    Рекурсивно обходит список шагов:
+      - fit → выполняет отдельный шаг;
+      - block → контейнер шагов с повторениями и рекурсией;
+      - noop → пропускает шаг.
+
+    Аргументы
+    ---------
+    schema_steps : list[StepModel]
+        Список шагов текущего уровня.
+    pr : объект профиля
+        Профиль для подгонки.
+    out_prev : Any
+        Результат предыдущего шага.
+    session : RefinementSession
+        Объект для логирования и сохранения истории.
+    depth : int
+        Глубина рекурсии (для логирования).
+    path : str
+        Идентификатор текущей ветки схемы.
     
-    elif step.type == "strategy":
-      repeat = step.repeat or 1
-      session.start_strategy(step.label, step_path, repeat, depth)   
-      for i in range(repeat):
-        session.start_cycle(step.label, step_path, i+1, repeat, depth+1)
-        out_prev = execute_strategy(step.strategy, pr, out_prev, session, depth=depth+1, path=step_path)
-    else:
-      raise ValueError(f"Unknown step type: {step.type}")
-  return out_prev
+    Возвращает
+    -------
+    out_prev : результат последнего выполненного шага
+
+    Исключения
+    ----------
+    ValueError : если встречается неизвестный тип шага
+
+    Примечания
+    ----------
+    на верхнем уровне — execute_schema() всегда вызывается для списка шагов
+    внутри блока — рекурсивно вызываем execute_schema(block.steps)
+    start_block — только для логирования начала блока
+    """
+    for step in schema_steps:
+      step_path = f"{path}.{step.step_id}" if path else step.step_id
+      if step.type == "fit":
+        out_prev = execute_step(step, pr, out_prev, session, depth=depth, step_path=step_path)
+    
+      elif step.type == "block":
+        repeat = step.repeat or 1
+        session.start_block(step.label, step_path, repeat, depth)   
+        for i in range(repeat):
+          session.start_cycle(step.label, step_path, i+1, repeat, depth+1)
+          out_prev = execute_schema(step.steps, pr, out_prev, session, depth=depth+1, path=step_path)
+      else:
+        raise ValueError(f"Неизвестный тип шага: {step.type}")
+    return out_prev

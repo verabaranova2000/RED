@@ -50,7 +50,7 @@ class RefinementSession:
     start_step(...)
         Начать логирование шага refinement.
 
-    start_strategy(...)
+    start_block(...)
         Вывести заголовок блока стратегии.
 
     start_cycle(...)
@@ -152,9 +152,9 @@ class RefinementSession:
         self.current_header = header_text
 
 
-    # ---------- STRATEGY START ----------
-    def start_strategy(self, label, step_path, repeat, depth):
-        line = format_cycle_header(step_path=step_path, depth=depth, kind="strategy", label=f"{label} ×{repeat}")
+    # ---------- BLOCK START ----------
+    def start_block(self, label, step_path, repeat, depth):
+        line = format_cycle_header(step_path=step_path, depth=depth, kind="block", label=f"{label} ×{repeat}")
         self.logger.info(line)
 
     # ---------- CYCLE START ----------

@@ -127,7 +127,7 @@ def format_step_header(step_path: str, name: str, n_params: int, segment: Tuple[
     return f"{indent}{LIGHTGRAY_BG}{step_part} {name_part} {param_part}{RESET_ALL} | {segment_part:<{SEGMENT_WIDTH}} |"
 
 
-# ====== Формат header для шага "strategy"======
+# ====== Формат header для шага "block"======
 STEP_HEADER_WIDTH = 0*len("▶ [007.001] ") + STEP_NAME_WIDTH + 4 + PARAM_COUNT_WIDTH-2 + 2*len(' | ') + SEGMENT_WIDTH + RP_WIDTH
 
 def format_cycle_header(step_path: str, depth: int, kind: str = "cycle", idx: int = None, total: int = None, label: str = "") -> str:
@@ -173,7 +173,7 @@ def format_cycle_header(step_path: str, depth: int, kind: str = "cycle", idx: in
         #return f"{indent}{LIGHTGRAY_BG}{RED}{BOLD}{padded_label}{BOLD_OFF}{RESET}"   # с серым фоном
         return f"{indent}{RED}{BOLD}{padded_label}{BOLD_OFF}{RESET_ALL}"
     
-    elif kind == "strategy":
+    elif kind == "block":
         step_label = f"▶ {label}"  # блок стратегии, например "cycle_block ×5"
         padded_label = f"{step_label:<{width + len(make_indent(depth+1))}}"
         return f"{indent}{LIGHTGRAY_BG}{BOLD}{padded_label}{BOLD_OFF}{RESET_ALL}"
