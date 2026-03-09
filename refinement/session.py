@@ -15,7 +15,92 @@ from refinement.logutils.formatting import (
     SEPARATOR
 )
 
+
+"""
+Refinement session controller.
+
+Модуль содержит класс RefinementSession, который управляет выводом
+логов шагов refinement, хранит историю выполнения и формирует
+сводный отчёт по результатам.
+
+Класс используется во время выполнения процесса refinement
+(см. execution.py) и отвечает за:
+
+- вывод строк-заголовков шагов и циклов шагов 
+  (в виде обновляемой строки-заголовка LiveHeader, затем лога loguru)
+- отслеживание изменения метрики Rp
+- вывод таблиц с результатами уточнения параметров
+- накопление истории шагов refinement
+
+Форматирование строк и механизмы live-вывода реализованы
+в модуле refinement.logutils.
+"""
+
+
 class RefinementSession:
+    """
+    Контроллер логирования процесса refinement.
+
+    Класс управляет выводом информации о шагах уточнения,
+    отслеживает изменение метрики Rp и сохраняет историю
+    выполнения refinement.
+
+    Methods
+    -------
+    start_step(...)
+        Начать логирование шага refinement.
+
+    start_strategy(...)
+        Вывести заголовок блока стратегии.
+
+    start_cycle(...)
+        Вывести заголовок цикла refinement.
+
+    report_Rp(...)
+        Завершить шаг и вывести значение Rp.
+
+    report_parameters(...)
+        Вывести таблицу обновлённых параметров.
+
+    report_background_group(...)
+        Вывести группу параметров фона.
+
+    save_step(...)
+        Сохранить информацию о шаге в историю.
+
+    summary()
+        Вывести итоговую сводку refinement.
+
+    
+    Attributes
+    ----------
+    history : list of dict
+        История шагов refinement.
+
+    prev_Rp : float or None
+        Значение Rp на предыдущем шаге.
+
+    Notes
+    -----
+    Класс не выполняет вычисления refinement. Он используется
+    совместно с модулем execution, который отвечает за запуск
+    шагов уточнения.
+
+    Examples
+    -------
+    Использование через внешний API:
+
+    >>> session = RefinementSession()
+    >>> execute_strategy(strategy_steps, pr, out_prev=None, session=session)
+    >>> session.summary()
+
+    Прямое использование методов класса (обычно не требуется для пользователя):
+
+    >>> session = RefinementSession()
+    >>> session.start_step("SCALE", (0.3, 5.7), n_params=2, depth=0, step_path="001")
+    >>> session.report_Rp(12.345)
+    >>> session.summary()
+    """
     def __init__(self, pylogger="RefinementStep"):
         self.pylogger = pylogger
         self.logger = logger.bind(pylogger=pylogger)
@@ -31,6 +116,30 @@ class RefinementSession:
 
     # ---------- STEP HEADER ----------
     def start_step(self, name, segment, n_params, depth, step_path):
+        """
+        Начать логирование нового шага refinement.
+
+        Печатает заголовок шага в режиме live (без перевода строки).
+        После завершения шага строка будет заменена финальным
+        лог-сообщением после вызова метода report_Rp().
+
+        Parameters
+        ----------
+        name : str
+            Имя шага (например SCALE, BACKGROUND).
+
+        segment : tuple[float, float]
+            Диапазон 2θ, используемый в шаге refinement.
+
+        n_params : int
+            Количество уточняемых параметров.
+
+        depth : int
+            Уровень вложенности шага.
+
+        step_path : str
+            Идентификатор шага в дереве refinement (напр., 007.001).
+        """
         self.step_index += 1
         header_text = format_step_header(step_path, name, n_params, segment, depth)
         # --- создаём live ---
@@ -54,7 +163,19 @@ class RefinementSession:
 
     # ---------- REPORT METRICS ----------
     def report_Rp(self, Rp):
-        # arrow:    ⬊⬈➘➚↗↘⬀⬂➴➶➷➹→
+        """
+        Завершить текущий шаг и вывести значение Rp.
+
+        Метод заменяет временную строку live-заголовка
+        финальным лог-сообщением, содержащим метрику Rp.
+        Также отображается направление изменения Rp
+        относительно предыдущего шага (arrows:    ⬊⬈➘➚↗↘⬀⬂➴➶➷➹→).
+
+        Parameters
+        ----------
+        Rp : float
+            Значение R-фактора после завершения шага refinement.
+        """
         if self.prev_Rp is None:
             text = f"Rp {Rp:.3f}%"
             final_suffix = f"{text:<{RP_WIDTH}}"
@@ -84,15 +205,23 @@ class RefinementSession:
     # ---------- NORMAL PARAM TABLE ----------
     def report_parameters(self, param_data):
         """
-        param_data = dict:
-        {
-            "scale": (value, delta_percent),
-            ...
-        }
-        разделители всегда одинаковые
-        ширины всегда одинаковые
-        менять формат — в одном месте
-        """        
+        Вывести таблицу обновлённых параметров.
+
+        Parameters
+        ----------
+        param_data : dict
+            Словарь вида:
+
+            {
+                "scale": (value, delta_percent),
+                ...
+            }
+
+        Notes
+        -----
+        Таблица выводится без стандартного форматирования логгера (напр., "HH:mm:ss | INFO | ...")
+        (raw output), чтобы сохранить чистый вывод. Учтен сдвиг для выравнивания колонок.
+        """       
         header = (f"{'Param':<{PARAM_COL_WIDTH}}"
                   f"{'Value':>{VALUE_COL_WIDTH}}"
                   f"{'Δ%':>{DELTA_COL_WIDTH}}")
@@ -148,6 +277,9 @@ class RefinementSession:
 
     # ---------- SAVE STEP ----------
     def save_step(self, label, step_path=None, depth=None):
+        """
+        Сохранить информацию о выполненном шаге в историю refinement.
+        """
         self.history.append({"label": label,
                              "step_path": step_path,
                              "depth": depth,
@@ -156,6 +288,12 @@ class RefinementSession:
 
     # ---------- SUMMARY ----------
     def summary(self):
+        """
+        Вывести итоговую сводку refinement.
+
+        Отображает таблицу истории шагов и график изменения
+        метрики Rp.
+        """
         print("═" * 40)
         print("FINAL SUMMARY")
         print("═" * 40)

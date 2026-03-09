@@ -15,6 +15,8 @@ from utils.logging_setup import BASE_FORMAT
 
 Используется в классе RefinementSession для структурированного вывода
 хода refinement в терминале/блокноте.
+
+
 """
 
 
@@ -44,11 +46,10 @@ class LiveHeader:
     
     Example
     -------   
-    >>> liveh = LiveHeader(logger, pylogger="RefinementStep")
-    >>> current_header = "HH:MM:SS | INFO    | RefinementStep  | ▶ [001] SCALE        ( 1) | 0.32–2.13° | "
-    >>> final_suffix = "Rp 76.956% ⬈"
-    >>> liveh.start(current_header)
-    >>> liveh.finish(current_header, final_suffix)   
+    >>> my_logger = logger.bind(pylogger="RefinementStep")                       # создаём локальный logger с нужным pylogger
+    >>> lh = LiveHeader(my_logger, pylogger="RefinementStep")
+    >>> lh.start("Step running")
+    >>> lh.finish("Step done", "Rp 12.345% ⬊")   
 
     Before-after
     ------- 
