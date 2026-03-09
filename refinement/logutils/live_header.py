@@ -4,15 +4,17 @@ from datetime import datetime
 from utils.logging_setup import BASE_FORMAT
 
 """
-Механизм live-вывода строки заголовка шага refinement.
+Модуль для live-вывода заголовка шага refinement.
 
-Модуль содержит класс LiveHeader, который используется для временного
-отображения строки лога в момент начала выполнения шага. Эта строка
-печатается без перевода строки и заменяется финальным лог-сообщением
-после завершения шага.
+Содержит класс LiveHeader, который используется для временного
+отображения строки лога в момент начала выполнения шага.
+Эта строка заменяется финальным лог-сообщением после завершения шага.
 
-Это позволяет показать пользователю ход выполнения refinement до того,
-как будут вычислены итоговые метрики (например Rp).
+Позволяет пользователю видеть заголовок стартовавшего, но еще незавершенного шага refinement
+до того, как будут уточнены параметры и вычислены итоговые метрики (например, Rp).
+
+Используется в классе RefinementSession для структурированного вывода
+хода refinement в терминале/блокноте.
 """
 
 
@@ -36,8 +38,22 @@ class LiveHeader:
         Уровень логирования для финального сообщения.
 
     base_format : str, optional
-        Базовый формат строки лога без цветовых тегов. Если не указан,
-        используется глобальный BASE_FORMAT из logging_setup.
+        Базовый формат строки лога без цветовых тегов. 
+        Если не указан, используется глобальный BASE_FORMAT 
+        (созданный на основе глобального формата логов loguru) из logging_setup.
+    
+    Example
+    -------   
+    >>> liveh = LiveHeader(logger, pylogger="RefinementStep")
+    >>> current_header = "HH:MM:SS | INFO    | RefinementStep  | ▶ [001] SCALE        ( 1) | 0.32–2.13° | "
+    >>> final_suffix = "Rp 76.956% ⬈"
+    >>> liveh.start(current_header)
+    >>> liveh.finish(current_header, final_suffix)   
+
+    Before-after
+    ------- 
+    05:25:11 | INFO    | RefinementStep  | ▶ [001] SCALE        ( 1) | 0.32–2.13° | 
+    05:26:01 | INFO    | RefinementStep  | ▶ [001] SCALE        ( 1) | 0.32–2.13° | Rp 76.956% ⬈   |
     """
     def __init__(self, logger, pylogger: str, level: str ="INFO", base_format: str | None = None):
         self.logger = logger

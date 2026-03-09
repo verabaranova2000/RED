@@ -23,7 +23,7 @@ COLOR_FORMAT = (
     "<level>{level: <7}</level> | "
     "<cyan>{extra[pylogger]: <15}</cyan> | "
     "{message} | "
-    #"<level>{message}</level> | "
+    #"<level>{message}</level> | "    # жирный шрифт
 )
 
 # ==== Формат (для использования в LiveHeader) ====

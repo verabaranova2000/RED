@@ -3,7 +3,17 @@
 from IPython.display import display, HTML
 import pandas as pd
 import matplotlib.pyplot as plt
+from datetime import datetime
 
+from utils.logging_setup import logger, BASE_FORMAT
+from refinement.logutils.live_header import LiveHeader
+from refinement.logutils.formatting import (
+    format_step_header, format_cycle_header,
+    BOLD, BLUE, 
+    LIGHT_GREEN_BG, LIGHT_RED_BG, RESET_ALL,
+    PARAM_COL_WIDTH, VALUE_COL_WIDTH, DELTA_COL_WIDTH, RP_WIDTH,
+    SEPARATOR
+)
 
 class RefinementSession:
     def __init__(self, pylogger="RefinementStep"):
@@ -24,7 +34,7 @@ class RefinementSession:
         self.step_index += 1
         header_text = format_step_header(step_path, name, n_params, segment, depth)
         # --- создаём live ---
-        self.live = LiveHeader(pylogger=self.pylogger, logger=self.logger, base_format=color_to_base_format(COLOR_FORMAT))
+        self.live = LiveHeader(pylogger=self.pylogger, logger=self.logger, base_format=BASE_FORMAT)
         self.live.start(header_text)
         self.log_indent = self._get_log_indent()
         # сохраняем для использования при finish
@@ -52,11 +62,11 @@ class RefinementSession:
             if Rp < self.prev_Rp:
                 text = f"Rp {Rp:.3f}% ⬊"
                 text = f"{text:<{RP_WIDTH}}"
-                final_suffix = f"{LIGHT_GREEN_BG}{text}{RESET}"
+                final_suffix = f"{LIGHT_GREEN_BG}{text}{RESET_ALL}"
             elif Rp > self.prev_Rp:
                 text = f"Rp {Rp:.3f}% ⬈"
                 text = f"{text:<{RP_WIDTH}}"
-                final_suffix = f"{LIGHT_RED_BG}{text}{RESET}"
+                final_suffix = f"{LIGHT_RED_BG}{text}{RESET_ALL}"
             else:
                 text = f"Rp {Rp:.3f}%"
                 final_suffix = f"{text:<{RP_WIDTH}}"
@@ -83,17 +93,14 @@ class RefinementSession:
         ширины всегда одинаковые
         менять формат — в одном месте
         """        
-        BOLD = "\x1b[1m"
-        BLUE = "\x1b[34m"
-        RESET = "\x1b[0m"
         header = (f"{'Param':<{PARAM_COL_WIDTH}}"
                   f"{'Value':>{VALUE_COL_WIDTH}}"
                   f"{'Δ%':>{DELTA_COL_WIDTH}}")
         rows = []
         for p, (val, dperc) in param_data.items():
-            row = (f"{BLUE}{BOLD}{p:<{PARAM_COL_WIDTH}}{RESET}"
-                  f"{BLUE}{val:>{VALUE_COL_WIDTH}.6f}{RESET}"
-                  f"{BLUE}{dperc:>{DELTA_COL_WIDTH}.3f}{RESET}")
+            row = (f"{BLUE}{BOLD}{p:<{PARAM_COL_WIDTH}}{RESET_ALL}"
+                  f"{BLUE}{val:>{VALUE_COL_WIDTH}.6f}{RESET_ALL}"
+                  f"{BLUE}{dperc:>{DELTA_COL_WIDTH}.3f}{RESET_ALL}")
             rows.append(row)
         block = "\n".join([header] + rows + [SEPARATOR])
         indented_block = "\n".join(self.log_indent + line for line in block.split("\n")) # добавляем отступ к каждой строке таблицы
