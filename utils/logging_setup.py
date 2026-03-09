@@ -5,10 +5,15 @@ from loguru import logger
 
 
 """
-Как использовать теперь? В начале notebook или main-скрипта:
+Глобальная настройка логирования проекта.
 
->>> from logging_setup import setup_logging
->>> setup_logging()
+Настраивает библиотеку loguru для вывода логов и
+перехватывает стандартный модуль logging через InterceptHandler,
+чтобы все сообщения логирования выводились в едином формате.
+
+Использование:
+    from utils.logging_setup import setup_logging
+    setup_logging()
 """
 
 
