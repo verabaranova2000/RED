@@ -88,6 +88,8 @@ class RefinementSession:
 
     Examples
     -------
+    >>> from refinement import RefinementSession
+    
     Использование через внешний API:
 
     >>> session = RefinementSession()

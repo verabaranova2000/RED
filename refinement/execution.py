@@ -1,3 +1,8 @@
+
+from .metrics import profile_R_factor
+from .session import RefinementSession
+from .param_utils import val_delta_percent
+
 # ==== Исполнитель шага "fit" ====
 def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, depth: int, step_path: str):
     # --- pre hooks ---
