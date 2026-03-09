@@ -64,8 +64,29 @@ class InterceptHandler(logging.Handler):
 
 def setup_logging(level="INFO"):
     """
-    Initialize project-wide logging.
-    Safe for Jupyter and scripts.
+    Настроить глобальное логирование проекта.
+
+    Функция инициализирует систему логирования на основе библиотеки
+    loguru и перенаправляет стандартный модуль ``logging`` в loguru
+    через ``InterceptHandler``. Это позволяет использовать обычный
+    ``logging.getLogger(...)`` внутри классов, но получать единый
+    формат логов, заданный в ``COLOR_FORMAT``.
+
+    Параметры
+    ----------
+    level : str, по умолчанию "INFO"
+        Минимальный уровень логирования для вывода сообщений
+        (например: "DEBUG", "INFO", "WARNING", "ERROR").
+
+    Примечания
+    ----------
+    Функцию нужно вызвать один раз в начале программы
+    (например в ``main`` или в начале notebook).
+
+    Пример
+    -------
+    >>> from utils.logging_setup import setup_logging
+    >>> setup_logging()
     """
     # Убираем стандартные обработчики (handlers) logging (Jupyter-safe)
     for handler in logging.root.handlers[:]:
