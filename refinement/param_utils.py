@@ -1,5 +1,10 @@
+from __future__ import annotations       # делает все аннотации ленивыми (строками)
+from typing import Optional, List, TYPE_CHECKING
+#if TYPE_CHECKING:
+#    # импорт только для type checkers, не выполняется во время рантайма
+#    from refinement.project import Project
+
 from lmfit import Parameters, Parameter 
-from typing import Optional, List
 from phases.params import hkl_to_str
 from phases.models import model_list
 
@@ -160,7 +165,7 @@ def deepcopy_params(params):
 
 
 # ====== Подготовка набора параметров к новому уточнению 
-def params_for_next(project_object: Project, 
+def params_for_next(project_object,     #: Project, 
                     model_result, 
                     canсel_lastref: Optional[List[str]] = None, 
                     undate_init_val='all', 
