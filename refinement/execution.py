@@ -3,6 +3,7 @@ from .metrics import profile_R_factor
 from .session import RefinementSession
 from .param_utils import params_for_next, val_delta_percent
 from .schema.models import StepModel
+from .segment import resolve_segment
 
 # ==== Исполнитель шага "fit" ====
 def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, depth: int, step_path: str):
