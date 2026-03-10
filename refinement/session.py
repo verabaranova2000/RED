@@ -15,6 +15,7 @@ from refinement.logutils.formatting import (
     PARAM_COL_WIDTH, VALUE_COL_WIDTH, DELTA_COL_WIDTH, RP_WIDTH,
     SEPARATOR
 )
+from .param_utils import BACKGROUND_PARAM_PATTERN
 
 
 """
@@ -251,15 +252,33 @@ class RefinementSession:
           if not m:
               return p, None
           return m.group(1), int(m.group(2))
+        
+        def parse_background_param(name: str):
+            """
+            Разобрать имя параметра фона.
+
+            Возвращает
+            ----------
+            (prefix, index)
+            """
+            m = BACKGROUND_PARAM_PATTERN.match(name)
+            if not m:
+                return None, None
+
+            prefix = m.group(1)
+            idx = int(name[len(prefix):])
+            return prefix, idx
 
         indent_ch = len(self.log_indent)  # число пробелов
         # --- вычислить диапазон ---
         prefix, indices = None, []
         for p in param_data:
-            pref, idx = split_param(p)
+            pref, idx = parse_background_param(p)
             if prefix is None:
                 prefix = pref
             indices.append(idx)
+        print("DEBUG PREFIX:", prefix)
+        print("DEBUG INDICES:", indices)
         first_idx, last_idx = min(indices), max(indices)
 
         group_label = f"{prefix}[{first_idx}–{last_idx}]"
