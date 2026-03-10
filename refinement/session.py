@@ -242,6 +242,9 @@ class RefinementSession:
 
     # ---------- BACKGROUND GROUP ----------
     def report_background_group(self, param_data):
+            # отладочный вывод — временно
+        print("DEBUG report_background_group param_data keys:", list(param_data.keys()))
+
         def split_param(p):
           """
           Превращает: 
