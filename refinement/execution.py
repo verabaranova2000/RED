@@ -49,7 +49,7 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
         for hook in step.pre:
             if hook == "fix_all_except":
                 # фиксируем все, кроме указанных
-                my_pars = params_for_next(out_prev, refonly=step.params)
+                my_pars = params_for_next(pr, out_prev, refonly=step.params)
             elif hook == "noop":
                 pass
     # --- resolve segment ---
