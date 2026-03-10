@@ -401,3 +401,23 @@ def is_background_param(name: str) -> bool:
         True, если параметр соответствует шаблону фонового параметра.
     """
     return bool(BACKGROUND_PARAM_PATTERN.match(name))
+
+def parse_background_param(name: str):
+    """
+    Разобрать имя параметра фона.
+    
+    Превращает: 
+        bckg12 → ("bckg", 12)
+        s7     → ("s", 7)
+
+    Возвращает
+    ----------
+    (prefix, index)
+    """
+    m = BACKGROUND_PARAM_PATTERN.match(name)
+    if not m:
+        return None, None
+
+    prefix = m.group(1)
+    idx = int(name[len(prefix):])
+    return prefix, idx

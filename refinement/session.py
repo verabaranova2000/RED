@@ -4,7 +4,7 @@ from IPython.display import display, HTML
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
-import re
+
 
 from utils.logging_setup import logger, BASE_FORMAT
 from refinement.logutils.live_header import LiveHeader
@@ -15,7 +15,7 @@ from refinement.logutils.formatting import (
     PARAM_COL_WIDTH, VALUE_COL_WIDTH, DELTA_COL_WIDTH, RP_WIDTH,
     SEPARATOR
 )
-from .param_utils import BACKGROUND_PARAM_PATTERN
+from .param_utils import parse_background_param
 
 
 """
@@ -241,37 +241,7 @@ class RefinementSession:
 
 
     # ---------- BACKGROUND GROUP ----------
-    def report_background_group(self, param_data):
-            # отладочный вывод — временно
-        print("DEBUG report_background_group param_data keys:", list(param_data.keys()))
-
-        def split_param(p):
-          """
-          Превращает: 
-              bckg12 → ("bckg", 12)
-              s7     → ("s", 7)
-          """
-          m = re.match(r"([a-zA-Z_]+)(\d+)", p)
-          if not m:
-              return p, None
-          return m.group(1), int(m.group(2))
-        
-        def parse_background_param(name: str):
-            """
-            Разобрать имя параметра фона.
-
-            Возвращает
-            ----------
-            (prefix, index)
-            """
-            m = BACKGROUND_PARAM_PATTERN.match(name)
-            if not m:
-                return None, None
-
-            prefix = m.group(1)
-            idx = int(name[len(prefix):])
-            return prefix, idx
-
+    def report_background_group(self, param_data):       
         indent_ch = len(self.log_indent)  # число пробелов
         # --- вычислить диапазон ---
         prefix, indices = None, []
@@ -280,8 +250,6 @@ class RefinementSession:
             if prefix is None:
                 prefix = pref
             indices.append(idx)
-        print("DEBUG PREFIX:", prefix)
-        print("DEBUG INDICES:", indices)
         first_idx, last_idx = min(indices), max(indices)
 
         group_label = f"{prefix}[{first_idx}–{last_idx}]"
