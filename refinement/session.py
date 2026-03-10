@@ -278,13 +278,25 @@ class RefinementSession:
 
 
     # ---------- SAVE STEP ----------
-    def save_step(self, label, step_path=None, depth=None):
+    def save_step(self, label, step_path=None, depth=None, params=None):
         """
         Сохранить информацию о выполненном шаге в историю refinement.
+
+        Parameters
+        ----------
+        label : str
+            Название шага.
+        step_path : str, optional
+            Идентификатор шага в дереве стратегии.
+        depth : int, optional
+            Уровень вложенности шага.
+        params : list[str], optional
+            Список параметров, уточняемых на шаге.
         """
         self.history.append({"label": label,
                              "step_path": step_path,
                              "depth": depth,
+                             "params": params,
                              "timestamp": datetime.now(),
                              "Rp": self.current_Rp})
 
@@ -296,11 +308,16 @@ class RefinementSession:
         Отображает таблицу истории шагов и график изменения
         метрики Rp.
         """
+        if not self.history:
+            print("История шагов уточнения пуста.")
+            return
         print("═" * 40)
         print("FINAL SUMMARY")
         print("═" * 40)
 
         df = pd.DataFrame(self.history)
+        df["params"] = df["params"].apply(lambda x: ", ".join(x) if x else "")
+        df.index.name = "step"  # индекс = номер шага
         display(df)
 
         print(f"Final Rp: {self.history[-1]['Rp']:.3f}%")

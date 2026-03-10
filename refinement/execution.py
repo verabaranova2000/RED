@@ -1,7 +1,7 @@
 
 from .metrics import profile_R_factor
 from .session import RefinementSession
-from .param_utils import val_delta_percent
+from .param_utils import params_for_next, val_delta_percent
 from .schema.models import StepModel
 
 # ==== Исполнитель шага "fit" ====
@@ -86,7 +86,7 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
     if background_params:
         session.report_background_group(background_params)
 
-    session.save_step(step.label, step_path=step_path, depth=depth)
+    session.save_step(step.label, step_path=step_path, depth=depth, params=step.params)
     return out
 
 
