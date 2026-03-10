@@ -86,6 +86,7 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
         session.report_parameters(normal_params)
 
     if background_params:
+        print("BACKGROUND PARAMS:", background_params.keys())
         session.report_background_group(background_params)
 
     session.save_step(step.label, step_path=step_path, depth=depth, params=step.params)

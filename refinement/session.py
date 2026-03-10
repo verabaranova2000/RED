@@ -254,9 +254,13 @@ class RefinementSession:
 
         indent_ch = len(self.log_indent)  # число пробелов
         # --- вычислить диапазон ---
-        keys = list(param_data.keys())
-        prefix, first_idx = split_param(keys[0])
-        _, last_idx = split_param(keys[-1])
+        prefix, indices = None, []
+        for p in param_data:
+            pref, idx = split_param(p)
+            if prefix is None:
+                prefix = pref
+            indices.append(idx)
+        first_idx, last_idx = min(indices), max(indices)
 
         group_label = f"{prefix}[{first_idx}–{last_idx}]"
         # --- таблица ---

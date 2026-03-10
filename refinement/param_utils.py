@@ -375,17 +375,13 @@ def relative_change(pars, param_name):
 
 
 
-"""
-Утилиты для работы с именами параметров refinement.
-"""
+# ====== Утилиты для работы с именами параметров refinement ====== 
 
 
-# допустимые параметры фона:  bckg0, bckg1, ...; s0, s1, ...
-BACKGROUND_PARAM_PATTERN = re.compile(r"^(bckg|s)\d+$")
-# ^	        начало строки
-# (bckg|s)	префикс
-# \d+	      одно или больше чисел
-# $	        конец строки
+BACKGROUND_PARAM_PATTERN = re.compile(r"^(bckg|s)\d+$")   # допустимые параметры фона:  bckg0, bckg1, ...; s0, s1, ...
+# (bckg|s)	- префикс
+# \d+	      - одно или больше чисел
+# $	        - конец строки
 def is_background_param(name: str) -> bool:
     """
     Проверить, является ли параметр параметром фона.
@@ -393,5 +389,15 @@ def is_background_param(name: str) -> bool:
     Поддерживаемые форматы:
     - bckg0, bckg1, ...
     - s0, s1, ...
+
+    Параметры
+    ---------
+    name : str
+        Имя параметра модели.
+
+    Возвращает
+    ----------
+    bool
+        True, если параметр соответствует шаблону фонового параметра.
     """
     return bool(BACKGROUND_PARAM_PATTERN.match(name))
