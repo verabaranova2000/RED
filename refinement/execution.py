@@ -1,9 +1,10 @@
 
 from .metrics import profile_R_factor
 from .session import RefinementSession
-from .param_utils import params_for_next, val_delta_percent
+from .param_utils import params_for_next, val_delta_percent, is_background_param
 from .schema.models import StepModel
 from .segment import resolve_segment
+
 
 # ==== Исполнитель шага "fit" ====
 def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, depth: int, step_path: str):
@@ -76,7 +77,7 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
     for p in step.params:
         value, delta_percent = val_delta_percent(out.params, p)
 
-        if p.startswith("bckg"):
+        if is_background_param(p):
             background_params[p] = (value, delta_percent)
         else:
             normal_params[p] = (value, delta_percent)

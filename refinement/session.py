@@ -4,6 +4,7 @@ from IPython.display import display, HTML
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
+import re
 
 from utils.logging_setup import logger, BASE_FORMAT
 from refinement.logutils.live_header import LiveHeader
@@ -240,12 +241,24 @@ class RefinementSession:
 
     # ---------- BACKGROUND GROUP ----------
     def report_background_group(self, param_data):
-        indent_ch = len(self.log_indent)  # число пробелов
-        keys = list(param_data.keys())
-        first = keys[0]
-        last = keys[-1]
+        def split_param(p):
+          """
+          Превращает: 
+              bckg12 → ("bckg", 12)
+              s7     → ("s", 7)
+          """
+          m = re.match(r"([a-zA-Z_]+)(\d+)", p)
+          if not m:
+              return p, None
+          return m.group(1), int(m.group(2))
 
-        group_label = f"bckg[{first[-1]}–{last[-1]}]"
+        indent_ch = len(self.log_indent)  # число пробелов
+        # --- вычислить диапазон ---
+        keys = list(param_data.keys())
+        prefix, first_idx = split_param(keys[0])
+        _, last_idx = split_param(keys[-1])
+
+        group_label = f"{prefix}[{first_idx}–{last_idx}]"
         # --- таблица ---
         rows = ""
         for p, (val, dperc) in param_data.items():

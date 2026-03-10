@@ -4,6 +4,7 @@ from typing import Optional, List, TYPE_CHECKING
 #    # импорт только для type checkers, не выполняется во время рантайма
 #    from refinement.project import Project
 
+import re
 from lmfit import Parameters, Parameter 
 from phases.params import hkl_to_str
 from phases.models import model_list
@@ -368,3 +369,29 @@ def relative_change(pars, param_name):
     """
     val, delta = val_delta_percent(pars, param_name)
     return f"{param_name}={round(val, 6):<12} ({delta:>7} %)"
+
+
+
+
+
+
+"""
+Утилиты для работы с именами параметров refinement.
+"""
+
+
+# допустимые параметры фона:  bckg0, bckg1, ...; s0, s1, ...
+BACKGROUND_PARAM_PATTERN = re.compile(r"^(bckg|s)\d+$")
+# ^	        начало строки
+# (bckg|s)	префикс
+# \d+	      одно или больше чисел
+# $	        конец строки
+def is_background_param(name: str) -> bool:
+    """
+    Проверить, является ли параметр параметром фона.
+
+    Поддерживаемые форматы:
+    - bckg0, bckg1, ...
+    - s0, s1, ...
+    """
+    return bool(BACKGROUND_PARAM_PATTERN.match(name))
