@@ -46,6 +46,7 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
     - Расчёт метрики Rp и отчёт о параметрах выполняется через session.
     - Функция не изменяет саму схему. Обновляет параметры объекта Project и сессию.
     """
+    session.iter_exec_step += 1
     # --- pre hooks ---
     if step.pre:
         for hook in step.pre:
@@ -132,6 +133,7 @@ def execute_schema(schema_steps, pr, out_prev, session, depth=0, path=""):
     внутри блока — рекурсивно вызываем execute_schema(block.steps)
     start_block — только для логирования начала блока
     """
+    session.iter_exec_schema += 1
     for step in schema_steps:
       step_path = f"{path}.{step.step_id}" if path else step.step_id
       if step.type == "fit":

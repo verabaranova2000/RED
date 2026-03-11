@@ -110,11 +110,12 @@ class RefinementSession:
         self.logger = logger.bind(pylogger=pylogger)
         self.history = []
         self.prev_Rp = None
-        self.iteration = 0
         self.current_cycle = None
         self.live = None
         self.log_indent = None
-
+        self.iter_exec_step = 0      # нумератор шагов execute_step
+        self.iter_exec_sсhema = 0    # нумератор вызовов execute_schema
+        
     def _get_log_indent(self):
         prefix = self.live._build_prefix()
         return " " * len(prefix + " | " + " ▶  " + "[001]")
@@ -145,7 +146,6 @@ class RefinementSession:
         step_path : str
             Идентификатор шага в дереве refinement (напр., 007.001).
         """
-        self.iteration += 1
         header_text = format_step_header(step_path, name, n_params, segment, depth)
         # --- создаём live ---
         self.live = LiveHeader(pylogger=self.pylogger, logger=self.logger, base_format=BASE_FORMAT)
@@ -165,6 +165,26 @@ class RefinementSession:
         self.current_cycle = idx
         line = format_cycle_header(step_path=step_path, depth=depth, kind="cycle", idx=idx, total=total)
         self.logger.info(line)
+
+
+    def rollback_to_schema(self, schema_no: int):
+        """
+        Откатить историю и состояние сессии к концу указанной схемы (iter_exec_schema).
+
+        Parameters
+        ----------
+        schema_no : int
+            Номер схемы (iter_exec_schema), до которой откатываемся.
+            Все шаги после этой схемы будут удалены из history.
+        """
+        self.history = [h for h in self.history if h["iter_exec_schema"] <= schema_no]  # оставляем только шаги с iter_exec_schema <= schema_no
+        remaining_steps = [h["iter_exec_step"] for h in self.history]    # сброс счетчика шагов на последний шаг оставшейся схемы
+        self.iter_exec_step = max(remaining_steps, default=0)
+        self.iter_exec_schema = schema_no                                # сброс счетчика схем на откатанную
+        self.current_cycle = None                                        # сброс текущего номера цикла
+        self.prev_Rp = self.history[-1]["Rp"] if self.history else None  # сброс текущего Rp
+        self.logger.info(f"Откат сессии к концу схемы №{schema_no}")
+
 
 
     # ---------- REPORT METRICS ----------
@@ -308,7 +328,8 @@ class RefinementSession:
         params : list[str], optional
             Список параметров, уточняемых на шаге.
         """
-        self.history.append({"iteration": self.iteration,
+        self.history.append({"iter_exec_schema": self.iter_exec_schema,
+                             "iter_exec_step": self.iter_exec_step,
                              "label": label,
                              "step_path": step_path,
                              "cycle": self.current_cycle,
@@ -334,7 +355,7 @@ class RefinementSession:
 
         df = pd.DataFrame(self.history)
         df["params"] = df["params"].apply(lambda x: ", ".join(x) if x else "")
-        df = df.set_index("iteration")
+        df = df.set_index("iter_exec_step")
         df.index.name = "step"
         display(df)
 
