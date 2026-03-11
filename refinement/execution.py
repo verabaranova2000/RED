@@ -143,6 +143,7 @@ def execute_schema(schema_steps, pr, out_prev, session, depth=0, path=""):
         for i in range(repeat):
           session.start_cycle(step.label, step_path, i+1, repeat, depth+1)
           out_prev = execute_schema(step.steps, pr, out_prev, session, depth=depth+1, path=step_path)
+        session.current_cycle = None                 # сброс номера цикла после завершения всех циклов блока
       else:
         raise ValueError(f"Неизвестный тип шага: {step.type}")
     return out_prev

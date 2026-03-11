@@ -111,6 +111,7 @@ class RefinementSession:
         self.history = []
         self.prev_Rp = None
         self.step_index = 0
+        self.current_cycle = None
         self.live = None
         self.log_indent = None
 
@@ -161,6 +162,7 @@ class RefinementSession:
 
     # ---------- CYCLE START ----------
     def start_cycle(self, label, step_path, idx, total, depth):
+        self.current_cycle = idx
         line = format_cycle_header(step_path=step_path, depth=depth, kind="cycle", idx=idx, total=total)
         self.logger.info(line)
 
@@ -308,6 +310,7 @@ class RefinementSession:
         """
         self.history.append({"label": label,
                              "step_path": step_path,
+                             "cycle": self.current_cycle,
                              "depth": depth,
                              "params": params,
                              "timestamp": datetime.now(),
