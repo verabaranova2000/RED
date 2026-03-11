@@ -15,7 +15,7 @@ from refinement.logutils.formatting import (
     PARAM_COL_WIDTH, VALUE_COL_WIDTH, DELTA_COL_WIDTH, RP_WIDTH,
     SEPARATOR
 )
-from .param_utils import parse_background_param
+from .param_utils import parse_background_param, format_dperc
 
 
 """
@@ -231,9 +231,11 @@ class RefinementSession:
                   f"{'Δ%':>{DELTA_COL_WIDTH}}")
         rows = []
         for p, (val, dperc) in param_data.items():
+            val_str = f"{val:.6f}"
+            dperc_str = format_dperc(dperc)
             row = (f"{BLUE}{BOLD}{p:<{PARAM_COL_WIDTH}}{RESET_ALL}"
-                  f"{BLUE}{val:>{VALUE_COL_WIDTH}.6f}{RESET_ALL}"
-                  f"{BLUE}{dperc:>{DELTA_COL_WIDTH}.3f}{RESET_ALL}")
+                  f"{BLUE}{val_str:>{VALUE_COL_WIDTH}}{RESET_ALL}"
+                  f"{BLUE}{dperc_str:>{DELTA_COL_WIDTH}}{RESET_ALL}")
             rows.append(row)
         block = "\n".join([header] + rows + [SEPARATOR])
         indented_block = "\n".join(self.log_indent + line for line in block.split("\n")) # добавляем отступ к каждой строке таблицы
@@ -254,13 +256,17 @@ class RefinementSession:
 
         group_label = f"{prefix}[{first_idx}–{last_idx}]"
         # --- таблица ---
-        rows = ""
+        rows = []
         for p, (val, dperc) in param_data.items():
-            rows += (f"<tr>"
-                     f"<td style='padding-right:25px; color:blue; font-weight:bold'>{p}</td>"
-                     f"<td style='text-align:right;padding-right:25px; color:blue'>{val: <6}</td>"
-                     f"<td style='text-align:right; color:blue'>{dperc: <4}</td>"
-                     f"</tr>")
+            val_str = f"{val:.6f}"
+            dperc_str = format_dperc(dperc)
+            rows.append(
+                f"<tr>"
+                f"<td style='padding-right:25px; color:blue; font-weight:bold'>{p}</td>"
+                f"<td style='text-align:right;padding-right:25px; color:blue'>{val_str:{VALUE_COL_WIDTH}}</td>"
+                f"<td style='text-align:right; color:blue'>{dperc_str:{DELTA_COL_WIDTH}}</td>"
+                f"</tr>")
+        rows_html = "".join(rows)
         html = f"""
         <div style="margin-left:{indent_ch}ch; font-family:monospace;">
             <details>
@@ -273,7 +279,7 @@ class RefinementSession:
                         <th align="right">Value</th>
                         <th align="right">Δ%</th>
                     </tr>
-                    {rows}
+                    {rows_html}
                 </table>
             </details>
         </div>
