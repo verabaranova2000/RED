@@ -114,7 +114,7 @@ class RefinementSession:
         self.live = None
         self.log_indent = None
         self.iter_exec_step = 0      # нумератор шагов execute_step
-        self.iter_exec_sсhema = 0    # нумератор вызовов execute_schema
+        self.iter_exec_schema = 0    # нумератор вызовов execute_schema
         
     def _get_log_indent(self):
         prefix = self.live._build_prefix()
