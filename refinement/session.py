@@ -110,7 +110,7 @@ class RefinementSession:
         self.logger = logger.bind(pylogger=pylogger)
         self.history = []
         self.prev_Rp = None
-        self.step_number = 0
+        self.iteration = 0
         self.current_cycle = None
         self.live = None
         self.log_indent = None
@@ -145,7 +145,7 @@ class RefinementSession:
         step_path : str
             Идентификатор шага в дереве refinement (напр., 007.001).
         """
-        self.step_number += 1
+        self.iteration += 1
         header_text = format_step_header(step_path, name, n_params, segment, depth)
         # --- создаём live ---
         self.live = LiveHeader(pylogger=self.pylogger, logger=self.logger, base_format=BASE_FORMAT)
@@ -308,7 +308,7 @@ class RefinementSession:
         params : list[str], optional
             Список параметров, уточняемых на шаге.
         """
-        self.history.append({"step_number": self.step_number,
+        self.history.append({"iteration": self.iteration,
                              "label": label,
                              "step_path": step_path,
                              "cycle": self.current_cycle,
@@ -334,7 +334,8 @@ class RefinementSession:
 
         df = pd.DataFrame(self.history)
         df["params"] = df["params"].apply(lambda x: ", ".join(x) if x else "")
-        df.index.name = "step"  # индекс = номер шага
+        df = df.set_index("iteration")
+        df.index.name = "step"
         display(df)
 
         print(f"Final Rp: {self.history[-1]['Rp']:.3f}%")
