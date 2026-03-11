@@ -15,7 +15,7 @@ from refinement.logutils.formatting import (
     PARAM_COL_WIDTH, VALUE_COL_WIDTH, DELTA_COL_WIDTH, RP_WIDTH,
     SEPARATOR
 )
-from .param_utils import parse_background_param, format_dperc
+from .param_utils import parse_background_param, format_value, format_dperc
 
 
 """
@@ -231,8 +231,8 @@ class RefinementSession:
                   f"{'Δ%':>{DELTA_COL_WIDTH}}")
         rows = []
         for p, (val, dperc) in param_data.items():
-            val_str = f"{val:.6f}"
-            dperc_str = format_dperc(dperc)
+            val_str = format_value(val, fmt=".6f")
+            dperc_str = format_dperc(dperc, fmt=".3f")
             row = (f"{BLUE}{BOLD}{p:<{PARAM_COL_WIDTH}}{RESET_ALL}"
                   f"{BLUE}{val_str:>{VALUE_COL_WIDTH}}{RESET_ALL}"
                   f"{BLUE}{dperc_str:>{DELTA_COL_WIDTH}}{RESET_ALL}")
@@ -258,13 +258,13 @@ class RefinementSession:
         # --- таблица ---
         rows = []
         for p, (val, dperc) in param_data.items():
-            val_str = f"{val:.6f}"
-            dperc_str = format_dperc(dperc)
+            val_str = format_value(val, fmt=".6f")
+            dperc_str = format_dperc(dperc, fmt=".3f")
             rows.append(
                 f"<tr>"
                 f"<td style='padding-right:25px; color:blue; font-weight:bold'>{p}</td>"
-                f"<td style='text-align:right;padding-right:25px; color:blue'>{val_str:{VALUE_COL_WIDTH}}</td>"
-                f"<td style='text-align:right; color:blue'>{dperc_str:{DELTA_COL_WIDTH}}</td>"
+                f"<td style='text-align:right;padding-right:25px; color:blue'>{val_str:>{VALUE_COL_WIDTH}}</td>"
+                f"<td style='text-align:right; color:blue'>{dperc_str:>{DELTA_COL_WIDTH}}</td>"
                 f"</tr>")
         rows_html = "".join(rows)
         html = f"""

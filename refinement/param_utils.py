@@ -373,12 +373,18 @@ def val_delta_percent(pars, param_name):
         dperc = (init_val - val) / init_val * 100
     return val, dperc
 
+def format_value(v, fmt=".6f"):
+    """ Утилита для value из val_delta_percent. """
+    if v is None:
+        return "—"
+    return format(v, fmt)
 
-def format_dperc(d):
+def format_dperc(d, fmt=".3f"):
     """ Утилита для delta_percent из val_delta_percent. """
     if d is None:
         return "∞"
-    return f"{d:.3f}"
+    return format(d, fmt)   #f"{d:.3f}"
+
 
 # Возможно, не пригодится. Убрать
 def relative_change(pars, param_name):
