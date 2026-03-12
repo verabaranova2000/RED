@@ -133,7 +133,9 @@ def execute_schema(schema_steps, pr, out_prev, session, depth=0, path=""):
     внутри блока — рекурсивно вызываем execute_schema(block.steps)
     start_block — только для логирования начала блока
     """
-    session.iter_exec_schema += 1
+    if depth == 0:
+      session.iter_exec_schema += 1
+
     for step in schema_steps:
       step_path = f"{path}.{step.step_id}" if path else step.step_id
       if step.type == "fit":
@@ -148,4 +150,7 @@ def execute_schema(schema_steps, pr, out_prev, session, depth=0, path=""):
         session.current_cycle = None                 # сброс номера цикла после завершения всех циклов блока
       else:
         raise ValueError(f"Неизвестный тип шага: {step.type}")
+    # --- автосохранение ---
+    if depth == 0:
+        session.autosave()
     return out_prev

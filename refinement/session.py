@@ -4,7 +4,7 @@ from IPython.display import display, HTML
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
-
+import pickle
 
 from utils.logging_setup import logger, BASE_FORMAT
 from refinement.logutils.live_header import LiveHeader
@@ -368,3 +368,70 @@ class RefinementSession:
         plt.ylabel("Rp (%)")
         plt.title("Refinement convergence")
         plt.show()
+
+    
+    # --------- Метод сериализации ---------------
+    def to_dict(self):
+        """
+        Преобразовать состояние сессии в словарь
+        (только сериализуемые данные).
+        """
+        return {
+            "pylogger": self.pylogger,
+            "history": self.history,
+            "prev_Rp": self.prev_Rp,
+            "current_cycle": self.current_cycle,
+            "iter_exec_step": self.iter_exec_step,
+            "iter_exec_schema": self.iter_exec_schema,
+        }
+    
+
+    # ------ Восстановление объекта -----------
+    @classmethod
+    def from_dict(cls, data):
+        """
+        Создать объект RefinementSession из словаря.
+        """
+        obj = cls(pylogger=data.get("pylogger", "RefinementStep"))
+
+        obj.history = data.get("history", [])
+        obj.prev_Rp = data.get("prev_Rp")
+        obj.current_cycle = data.get("current_cycle")
+        obj.iter_exec_step = data.get("iter_exec_step", 0)
+        obj.iter_exec_schema = data.get("iter_exec_schema", 0)
+        return obj
+
+
+    # ---- Сохранение в файл -------
+    def save(self, path):
+        """
+        Сохранить состояние session в файл.
+        """
+        data = self.to_dict()
+
+        with open(path, "wb") as f:
+            pickle.dump(data, f)
+    
+    
+    # ---- Автосохранение -------
+    def autosave(self):
+        self.save(f"session_autosave_{self.iter_exec_schema}.pkl")
+
+
+    # ----- Загрузка из файла -------
+    @classmethod
+    def load(cls, path):
+        """
+        Загрузить session из файла.
+
+        Использование
+        -----
+        >>> session.save("refinement_session.pkl")
+        >>> session = RefinementSession.load("refinement_session.pkl")
+        """
+        import pickle
+
+        with open(path, "rb") as f:
+            data = pickle.load(f)
+
+        return cls.from_dict(data)
