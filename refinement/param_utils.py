@@ -8,6 +8,7 @@ import re
 from lmfit import Parameters, Parameter 
 from phases.params import hkl_to_str
 from phases.models import model_list
+from refinement.segment import check_hkl_in_segment
 
 
 
