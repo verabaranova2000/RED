@@ -128,3 +128,23 @@ def resolve_segment(step: StepModel, two_theta: np.ndarray,
 
     # --- если сегмент не задан: использовать весь диапазон ---
     return 0, n-1, float(two_theta[0]), float(two_theta[-1])
+
+
+
+
+
+#@title Вспомогательная функция: проверить расположение рефлекса относительно заданного диапазона (xmin, xmax)
+## На вход:
+#  1. диапазон
+#  2. фаза
+#  3. индексы рефлекса
+
+def check_hkl_in_segment(segment, phase_object, h=None, k=None, l=None, I_name=None):
+  assert I_name is None or (h is None and k is None and l is None)
+  if I_name is None:   
+      h,k,l = float(h),float(k),float(l)
+  elif I_name is not None:   
+      h,k,l = [float(i) for i in I_name.split('_')[2:]]
+  min_2θ, max_2θ = min(segment), max(segment)
+  x_hkl = phase_object.x_hkl(h,k,l)
+  return ((x_hkl>=min_2θ) and (x_hkl<=max_2θ))
