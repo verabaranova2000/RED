@@ -50,11 +50,14 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
     # --- pre hooks ---
     if step.pre:
         for hook in step.pre:
-            if hook == "fix_all_except":
-                # фиксируем все, кроме указанных
-                my_pars = params_for_next(pr, out_prev, refonly=step.params)
-            elif hook == "noop":
-                pass
+            kwargs = hook.copy()
+            # если refonly не задан в YAML — берём step.params
+            kwargs.setdefault("refonly", step.params)
+            my_pars = params_for_next(pr, out_prev, **kwargs)
+    # если pre отсутствует — обычная подготовка параметров
+    else:
+        my_pars = params_for_next(pr, out_prev, refonly=step.params)
+
     # --- resolve segment ---
     y = pr.Profile_points.I_obs
     two_theta = pr.Profile_points.two_theta

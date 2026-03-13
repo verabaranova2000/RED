@@ -326,27 +326,6 @@ def params_for_next(project_object,     #: Project,
 #         - извлекает значение параметра
 #         - считает изменение %
 
-#def val_delta_percent(pars, param_name):
-#    """
-#    Возвращает значение параметра и его относительное изменение (%).
-
-#    Parameters
-#    ----------
-#    pars : lmfit.Parameters
-#        Набор параметров.
-
-#    param_name: str
-#        Имя параметра.
-
-#    Returns
-#    -------
-#    tuple
-#        (value, delta_percent)
-#    """
-#    val      = pars[param_name].value
-#    init_val = pars[param_name].init_value
-#    delta    = round(float((init_val-val)/init_val*100),3) if init_val!=0 else "∞"
-#    return val, delta
 
 def val_delta_percent(pars, param_name):
     """

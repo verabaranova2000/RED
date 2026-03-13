@@ -1,13 +1,23 @@
 #@title `StepModel`
 
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Any, Dict
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 # ------------- конфиг: допустимые хук-имена и типы шага -------------
 # ------------- (константы, из которых валидаторы потом проверяют корректность)
 ALLOWED_STEP_TYPES = {"fit", "block", "noop"}
-ALLOWED_HOOKS = {"fix_all_except", "free_params", "save_snapshot", "save_plot", "report_delta", "noop"}
+ALLOWED_PRE_KEYS = {"cancel_lastref",
+                    "undate_init_val",
+                    "fix",
+                    "refonly",
+                    "segment"}
+ALLOWED_HOOKS = {"free_params", 
+                 "save_snapshot", 
+                 "save_plot", 
+                 "report_delta", 
+                 "noop"}
 ALLOWED_COND_NAMES = {"Rp", "chisqr"}
+
 
 """
 Это — валидатор схемы, который превращает YAML стратегию в строго проверенную модель.
@@ -62,7 +72,7 @@ class StepModel(BaseModel):
     params:      Optional[List[str]] = None              # список параметров (только для fit)
     segment:     Optional[List[Optional[float]]] = None  # диапазон углов [startθ, endθ]
     segment_idx: Optional[List[Optional[int]]] = None    # диапазон индексов [i, j] в two_theta
-    pre:         Optional[List[str]] = None              # хуки до шага
+    pre:         Optional[List[Dict[str, Any]]] = None   # хуки до шага
     post:        Optional[List[str]] = None              # хуки до и после шага
     repeat:      int = Field(1, ge=1)                    # сколько раз повторять (по умолчанию 1)
     cond:        Optional[str] = None                    # условие
@@ -122,22 +132,59 @@ class StepModel(BaseModel):
 
 
     # -------- pre/post hooks --------------------------------------------
-    @field_validator('pre', 'post', mode='before')
+
+    @field_validator('pre', mode='before')
+    def validate_pre(cls, v):
+        """
+        Поле `pre` содержит список словарей с аргументами
+        для функции params_for_next.
+        """
+        if v is None:
+            return v
+        if not isinstance(v, list):
+            raise ValueError("поле 'pre' должно быть списком словарей")
+        for item in v:
+            if not isinstance(item, dict):
+                raise ValueError("каждый элемент 'pre' должен быть словарём")
+            for key, val in item.items():
+                if key not in ALLOWED_PRE_KEYS:
+                    raise ValueError(f"ключ '{key}' в 'pre' не разрешён. "
+                                     f"Допустимые: {ALLOWED_PRE_KEYS}")
+                # --- проверки типов ---
+                if key == "fix" and not isinstance(val, bool):
+                    raise ValueError("'fix' должен быть bool")
+                if key == "segment":
+                    if not (isinstance(val, list) and len(val) == 2):
+                        raise ValueError("'segment' должен быть [start, end]")
+                    for x in val:
+                        if x is not None and not isinstance(x, (int, float)):
+                            raise ValueError("элементы 'segment' должны быть int/float/None")
+                if key == "refonly":
+                    if not isinstance(val, list):
+                        raise ValueError("'refonly' должен быть списком параметров")
+                if key == "cancel_lastref":
+                    if not isinstance(val, list):
+                        raise ValueError("'cancel_lastref' должен быть списком")
+        return v
+    
+
+    @field_validator('post', mode='before')
     def validate_hooks(cls, v):
         """
         Проверка списка хуков.
 
-        Поля `pre` и `post` должны содержать список имён разрешённых хуков.
+        Поле `post` должно содержать список имён разрешённых хуков.
         Таким образом, YAML не сможет вызвать несуществующий хук.
         """
         if v is None:
             return v
         if not isinstance(v, list):
-            raise ValueError("поля 'pre' и 'post' должны содержать список имён хуков")
+            raise ValueError("поле 'pre' должно содержать список имён хуков")
         for name in v:
             if name not in ALLOWED_HOOKS:
                 raise ValueError(f"хук '{name}' не входит в список допустимых: {ALLOWED_HOOKS}")
         return v
+
 
     # -------- cond expression -------------------------------------------
     @field_validator('cond')
