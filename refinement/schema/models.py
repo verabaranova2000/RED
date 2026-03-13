@@ -169,7 +169,7 @@ class StepModel(BaseModel):
     
 
     @field_validator('post', mode='before')
-    def validate_hooks(cls, v):
+    def validate_post(cls, v):
         """
         Проверка списка хуков.
 
