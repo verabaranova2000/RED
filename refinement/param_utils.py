@@ -323,6 +323,52 @@ def params_for_next(project_object,     #: Project,
 
 
 
+
+
+
+# ==== Разворачивание маркеров типа "Phase1_I_inside" в реальные параметры ====
+def extract_param_intensity(pars, prefix=None):
+    """
+    Возвращает список параметров интенсивностей I_hkl из lmfit.Parameters.
+
+    Parameters
+    ----------
+    pars : lmfit.Parameters
+        Набор параметров модели.
+
+    prefix : str, optional
+        Префикс фазы (например 'Phase1_').
+        Если указан — выбираются только интенсивности этой фазы.
+
+    Returns
+    -------
+    list[str]
+        Список имён параметров интенсивностей.
+    """
+    names = []
+    for name in pars.keys():
+        if "_I_" in name:
+            if prefix is None or name.startswith(prefix):
+                names.append(name)
+    return names
+
+# --- Функция разворачивания *_I_inside ---
+def expand_param_intensity(params_list, pars):
+    """
+    Заменяет маркеры типа 'Phase1_I_inside' на реальные параметры интенсивностей.
+    """
+    expanded = []
+    for p in params_list:
+        if p.endswith("_I_inside"):
+            prefix = p.replace("I_inside", "")
+            expanded.extend(extract_param_intensity(pars, prefix))
+        else:
+            expanded.append(p)
+    return expanded
+
+
+
+
 # ====== Постобработка параметров  =====
 #         - извлекает значение параметра
 #         - считает изменение %

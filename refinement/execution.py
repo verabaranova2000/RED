@@ -2,6 +2,7 @@
 from .metrics import profile_R_factor
 from .session import RefinementSession
 from .param_utils import params_for_next, val_delta_percent, is_background_param
+from refinement.param_utils import expand_param_intensity
 from .schema.models import StepModel
 from .segment import resolve_segment
 
@@ -57,6 +58,9 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
     # если pre отсутствует — обычная подготовка параметров
     else:
         my_pars = params_for_next(pr, out_prev, refonly=step.params)
+
+    # --- разворачиваем маркеры интенсивностей ---
+    step.params = expand_param_intensity(step.params, my_pars)
 
     # --- resolve segment ---
     y = pr.Profile_points.I_obs
