@@ -485,3 +485,34 @@ def parse_background_param(name: str):
     prefix = m.group(1)
     idx = int(name[len(prefix):])
     return prefix, idx
+
+
+
+INTENSITY_PARAM_PATTERN = re.compile(r".+_I_\d+_\d+_\d+$")
+# Phase1_I_1_1_1
+# Phase1_I_2_0_0
+
+def is_intensity_param(name: str) -> bool:
+    return "_I_" in name
+
+
+
+
+def split_param_groups(param_data):
+    """
+    Разделить параметры на группы:
+    - background
+    - intensity
+    - normal
+    """
+    background = {}
+    intensity = {}
+    normal = {}
+    for p, val in param_data.items():
+        if is_background_param(p):
+            background[p] = val
+        elif is_intensity_param(p):
+            intensity[p] = val
+        else:
+            normal[p] = val
+    return background, intensity, normal

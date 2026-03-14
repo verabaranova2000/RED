@@ -79,22 +79,28 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
                           y_calc=pr.Profile_points.I_calc)
     session.report_Rp(Rp)
 
-    normal_params = {}
-    background_params = {}
+#    normal_params = {}
+#    background_params = {}
 
+#    for p in step.params:
+#        value, delta_percent = val_delta_percent(out.params, p)
+
+#        if is_background_param(p):
+#            background_params[p] = (value, delta_percent)
+#        else:
+#            normal_params[p] = (value, delta_percent)
+
+#    if normal_params:
+#        session.report_parameters(normal_params)
+
+#    if background_params:
+#        session.report_background_group(background_params)
+
+    param_data = {}
     for p in step.params:
         value, delta_percent = val_delta_percent(out.params, p)
-
-        if is_background_param(p):
-            background_params[p] = (value, delta_percent)
-        else:
-            normal_params[p] = (value, delta_percent)
-
-    if normal_params:
-        session.report_parameters(normal_params)
-
-    if background_params:
-        session.report_background_group(background_params)
+        param_data[p] = (value, delta_percent)
+    session.report_param_groups(param_data)
 
     session.save_step(step.label, step_path=step_path, depth=depth, params=step.params)
     return out

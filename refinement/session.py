@@ -15,7 +15,7 @@ from refinement.logutils.formatting import (
     PARAM_COL_WIDTH, VALUE_COL_WIDTH, DELTA_COL_WIDTH, RP_WIDTH,
     SEPARATOR
 )
-from .param_utils import parse_background_param, format_value, format_dperc
+from .param_utils import parse_background_param, format_value, format_dperc, split_param_groups
 
 
 """
@@ -309,6 +309,57 @@ class RefinementSession:
         display(HTML(html))
         # аккуратный разделитель под таблицей
         self.logger.opt(raw=True).info(self.log_indent + SEPARATOR + "\n")
+
+
+    # ---------- INTENSITY GROUP ----------
+    def report_intensity_group(self, param_data):       
+        indent_ch = len(self.log_indent)  # число пробелов
+        # --- название группы ---
+        group_label = f"Intensities ({len(param_data)})"
+        # --- таблица ---
+        rows = []
+        for p, (val, dperc) in param_data.items():
+            val_str = format_value(val, fmt=".6f")
+            dperc_str = format_dperc(dperc, fmt=".3f")
+            rows.append(
+                f"<tr>"
+                f"<td style='padding-right:25px; color:blue; font-weight:bold'>{p}</td>"
+                f"<td style='text-align:right;padding-right:25px; color:blue'>{val_str:>{VALUE_COL_WIDTH}}</td>"
+                f"<td style='text-align:right; color:blue'>{dperc_str:>{DELTA_COL_WIDTH}}</td>"
+                f"</tr>")
+        rows_html = "".join(rows)
+        html = f"""
+        <div style="margin-left:{indent_ch}ch; font-family:monospace;">
+            <details>
+                <summary style="cursor:pointer;">
+                    {group_label:<15} updated
+                </summary>
+                <table style="margin-top:6px;">
+                    <tr>
+                        <th align="left">Param</th>
+                        <th align="right">Value</th>
+                        <th align="right">Δ%</th>
+                    </tr>
+                    {rows_html}
+                </table>
+            </details>
+        </div>
+        """
+        display(HTML(html))
+        # аккуратный разделитель под таблицей
+        self.logger.opt(raw=True).info(self.log_indent + SEPARATOR + "\n")
+
+
+
+
+    def report_param_groups(self, param_data):
+        background, intensity, normal = split_param_groups(param_data)
+        if normal:
+            self.report_parameters(normal)
+        if intensity:
+            self.report_intensity_group(intensity)
+        if background:
+            self.report_background_group(background)
 
 
 
