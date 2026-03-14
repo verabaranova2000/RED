@@ -324,11 +324,68 @@ def params_for_next(project_object,     #: Project,
 
 
 
+# ====== Утилиты для работы с именами параметров refinement ====== 
+
+BACKGROUND_PARAM_PATTERN = re.compile(r"^(bckg|s)\d+$")   # допустимые параметры фона:  bckg0, bckg1, ...; s0, s1, ...
+# (bckg|s)	- префикс
+# \d+	      - одно или больше чисел
+# $	        - конец строки
+def is_background_param(name: str) -> bool:
+    """
+    Проверить, является ли параметр параметром фона.
+
+    Поддерживаемые форматы:
+    - bckg0, bckg1, ...
+    - s0, s1, ...
+
+    Параметры
+    ---------
+    name : str
+        Имя параметра модели.
+
+    Возвращает
+    ----------
+    bool
+        True, если параметр соответствует шаблону фонового параметра.
+    """
+    return bool(BACKGROUND_PARAM_PATTERN.match(name))
+
+def parse_background_param(name: str):
+    """
+    Разобрать имя параметра фона.
+    
+    Превращает: 
+        bckg12 → ("bckg", 12)
+        s7     → ("s", 7)
+
+    Возвращает
+    ----------
+    (prefix, index)
+    """
+    m = BACKGROUND_PARAM_PATTERN.match(name)
+    if not m:
+        return None, None
+    prefix = m.group(1)
+    idx = int(name[len(prefix):])
+    return prefix, idx
+
 
 
 # ==== Разворачивание маркеров типа "Phase1_I_inside" в реальные параметры ====
+INTENSITY_PARAM_PATTERN = re.compile(r".+_I_\d+_\d+_\d+$")
+def is_intensity_param(name: str) -> bool:
+    """
+    Классификация параметра: это параметр интенсивности или нет?
+    Шаблон: 
+      Phase1_I_1_1_1
+      Phase1_I_2_0_0
+    """
+    return "_I_" in name
+
+
 def extract_param_intensity(pars, prefix=None):
     """
+    Извлечение параметров из набора: какие параметры интенсивностей есть в наборе?
     Возвращает список параметров интенсивностей I_hkl из lmfit.Parameters.
 
     Parameters
@@ -347,7 +404,7 @@ def extract_param_intensity(pars, prefix=None):
     """
     names = []
     for name in pars.keys():
-        if "_I_" in name:
+        if is_intensity_param(name):
             if prefix is None or name.startswith(prefix):
                 names.append(name)
     return names
@@ -355,6 +412,7 @@ def extract_param_intensity(pars, prefix=None):
 # --- Функция разворачивания *_I_inside ---
 def expand_param_intensity(params_list, pars):
     """
+    Разворачивание YAML-маркеров.
     Заменяет маркеры типа 'Phase1_I_inside' на реальные параметры интенсивностей.
     """
     expanded = []
@@ -367,12 +425,35 @@ def expand_param_intensity(params_list, pars):
     return expanded
 
 
+def split_param_groups(param_data):
+    """
+    Разделить параметры на группы:
+    - background
+    - intensity
+    - normal
+    """
+    background = {}
+    intensity = {}
+    normal = {}
+    for p, val in param_data.items():
+        if is_background_param(p):
+            background[p] = val
+        elif is_intensity_param(p):
+            intensity[p] = val
+        else:
+            normal[p] = val
+    return background, intensity, normal
+
+
+
+
+
+
 
 
 # ====== Постобработка параметров  =====
 #         - извлекает значение параметра
 #         - считает изменение %
-
 
 def val_delta_percent(pars, param_name):
     """
@@ -433,86 +514,3 @@ def relative_change(pars, param_name):
     """
     val, delta = val_delta_percent(pars, param_name)
     return f"{param_name}={round(val, 6):<12} ({delta:>7} %)"
-
-
-
-
-
-
-# ====== Утилиты для работы с именами параметров refinement ====== 
-
-
-BACKGROUND_PARAM_PATTERN = re.compile(r"^(bckg|s)\d+$")   # допустимые параметры фона:  bckg0, bckg1, ...; s0, s1, ...
-# (bckg|s)	- префикс
-# \d+	      - одно или больше чисел
-# $	        - конец строки
-def is_background_param(name: str) -> bool:
-    """
-    Проверить, является ли параметр параметром фона.
-
-    Поддерживаемые форматы:
-    - bckg0, bckg1, ...
-    - s0, s1, ...
-
-    Параметры
-    ---------
-    name : str
-        Имя параметра модели.
-
-    Возвращает
-    ----------
-    bool
-        True, если параметр соответствует шаблону фонового параметра.
-    """
-    return bool(BACKGROUND_PARAM_PATTERN.match(name))
-
-def parse_background_param(name: str):
-    """
-    Разобрать имя параметра фона.
-    
-    Превращает: 
-        bckg12 → ("bckg", 12)
-        s7     → ("s", 7)
-
-    Возвращает
-    ----------
-    (prefix, index)
-    """
-    m = BACKGROUND_PARAM_PATTERN.match(name)
-    if not m:
-        return None, None
-
-    prefix = m.group(1)
-    idx = int(name[len(prefix):])
-    return prefix, idx
-
-
-
-INTENSITY_PARAM_PATTERN = re.compile(r".+_I_\d+_\d+_\d+$")
-# Phase1_I_1_1_1
-# Phase1_I_2_0_0
-
-def is_intensity_param(name: str) -> bool:
-    return "_I_" in name
-
-
-
-
-def split_param_groups(param_data):
-    """
-    Разделить параметры на группы:
-    - background
-    - intensity
-    - normal
-    """
-    background = {}
-    intensity = {}
-    normal = {}
-    for p, val in param_data.items():
-        if is_background_param(p):
-            background[p] = val
-        elif is_intensity_param(p):
-            intensity[p] = val
-        else:
-            normal[p] = val
-    return background, intensity, normal

@@ -229,7 +229,7 @@ class RefinementSession:
 
 
     # ---------- NORMAL PARAM TABLE ----------
-    def report_parameters(self, param_data):
+    def _render_param_table(self, param_data):
         """
         Вывести таблицу обновлённых параметров.
 
@@ -264,19 +264,15 @@ class RefinementSession:
         self.logger.opt(raw=True).info(indented_block + "\n")                   # выводим без лог-форматирования
 
 
-    # ---------- BACKGROUND GROUP ----------
-    def report_background_group(self, param_data):       
-        indent_ch = len(self.log_indent)  # число пробелов
-        # --- вычислить диапазон ---
-        prefix, indices = None, []
-        for p in param_data:
-            pref, idx = parse_background_param(p)
-            if prefix is None:
-                prefix = pref
-            indices.append(idx)
-        first_idx, last_idx = min(indices), max(indices)
+    # ---------- LIST: PARAM GROUP ----------
+    def _render_param_group(self, param_data, group_label):
+        """
+        HTML-таблица для групп параметров.
 
-        group_label = f"{prefix}[{first_idx}–{last_idx}]"
+        group_label: str 
+            Название группы (в строке "▶ ... updated") 
+        """       
+        indent_ch = len(self.log_indent)  # число пробелов
         # --- таблица ---
         rows = []
         for p, (val, dperc) in param_data.items():
@@ -293,7 +289,7 @@ class RefinementSession:
         <div style="margin-left:{indent_ch}ch; font-family:monospace;">
             <details>
                 <summary style="cursor:pointer;">
-                    {group_label:<15} updated
+                    {group_label} updated
                 </summary>
                 <table style="margin-top:6px;">
                     <tr>
@@ -307,59 +303,68 @@ class RefinementSession:
         </div>
         """
         display(HTML(html))
-        # аккуратный разделитель под таблицей
+        # разделитель под таблицей
         self.logger.opt(raw=True).info(self.log_indent + SEPARATOR + "\n")
-
-
-    # ---------- INTENSITY GROUP ----------
-    def report_intensity_group(self, param_data):       
-        indent_ch = len(self.log_indent)  # число пробелов
-        # --- название группы ---
-        group_label = f"Intensities ({len(param_data)})"
-        # --- таблица ---
-        rows = []
-        for p, (val, dperc) in param_data.items():
-            val_str = format_value(val, fmt=".6f")
-            dperc_str = format_dperc(dperc, fmt=".3f")
-            rows.append(
-                f"<tr>"
-                f"<td style='padding-right:25px; color:blue; font-weight:bold'>{p}</td>"
-                f"<td style='text-align:right;padding-right:25px; color:blue'>{val_str:>{VALUE_COL_WIDTH}}</td>"
-                f"<td style='text-align:right; color:blue'>{dperc_str:>{DELTA_COL_WIDTH}}</td>"
-                f"</tr>")
-        rows_html = "".join(rows)
-        html = f"""
-        <div style="margin-left:{indent_ch}ch; font-family:monospace;">
-            <details>
-                <summary style="cursor:pointer;">
-                    {group_label:<15} updated
-                </summary>
-                <table style="margin-top:6px;">
-                    <tr>
-                        <th align="left">Param</th>
-                        <th align="right">Value</th>
-                        <th align="right">Δ%</th>
-                    </tr>
-                    {rows_html}
-                </table>
-            </details>
-        </div>
-        """
-        display(HTML(html))
-        # аккуратный разделитель под таблицей
-        self.logger.opt(raw=True).info(self.log_indent + SEPARATOR + "\n")
-
-
 
 
     def report_param_groups(self, param_data):
-        background, intensity, normal = split_param_groups(param_data)
-        if normal:
-            self.report_parameters(normal)
-        if intensity:
-            self.report_intensity_group(intensity)
-        if background:
-            self.report_background_group(background)
+        """
+        Вывести обновлённые параметры шага refinement.
+
+        Функция разделяет параметры на группы (обычные параметры,
+        интенсивности и параметры фона) и выводит их в соответствующем
+        формате:
+
+        - обычные параметры выводятся как текстовая таблица;
+        - параметры интенсивностей и фона выводятся как HTML-таблицы
+        в выпадающем блоке.
+
+        Call flow
+        ---------
+        report_param_groups
+            ├─ _render_param_table
+            └─ _render_param_group
+
+        Parameters
+        ----------
+        param_data : dict
+            Словарь параметров вида:
+
+            {
+                "param_name": (value, delta_percent),
+                ...
+            }
+
+            где:
+            value : float
+                Уточнённое значение параметра.
+
+            delta_percent : float
+                Изменение параметра относительно предыдущего шага (%).
+
+        Notes
+        -----
+        Разделение параметров на группы выполняется функцией
+        ``split_param_groups``.
+        """
+        param_background, param_intensity, param_normal = split_param_groups(param_data)
+        if param_normal:
+            self._render_param_table(param_normal)
+        # ---------- INTENSITY GROUP ----------      
+        if param_intensity:
+            group_label = f"Intensities ({len(param_intensity)})"
+            self._render_param_group(param_intensity, group_label) # таблица
+        # ---------- BACKGROUND GROUP ----------
+        if param_background:
+            prefix, indices = None, []   # диапазон параметров фона
+            for p in param_background:
+                pref, idx = parse_background_param(p)
+                if prefix is None:
+                    prefix = pref
+                indices.append(idx)
+            first_idx, last_idx = min(indices), max(indices)
+            group_label = f"{prefix}[{first_idx}–{last_idx}]"
+            self._render_param_group(param_background, group_label) # таблица
 
 
 
