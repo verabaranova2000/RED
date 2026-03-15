@@ -266,7 +266,7 @@ def params_for_next(project_object,     #: Project,
           pars_new.get(par).vary=True                               # Открываем все сдвиги пиков для уточнения
 
       for par in refonly:                                           # Если подаем список параметров для уточнения
-        assert (par in [k for k,v in pars_new.items()]+['I_hkl']+['delta_hkl']) or ('_I_hkl' in par) or ('_I_inside' in par) or ('_profile' in par) # прерываем, если названия параметра нет в списке
+        assert (par in [k for k,v in pars_new.items()]+['I_hkl', 'delta_hkl', "s_all", "bckg_all"]) or ('_I_hkl' in par) or ('_I_inside' in par) or ('_profile' in par) # прерываем, если названия параметра нет в списке
         if par in [k for k,v in pars_new.items()] and (pars_new.get(par).expr is None):
           pars_new.get(par).vary=True                               # открываем параметр для уточнения
 
@@ -303,7 +303,8 @@ def params_for_next(project_object,     #: Project,
             hi,ki,li=line[:3]
             if check_hkl_in_segment(segm, my_phase,h=hi,k=ki,l=li):
               delta_name=f"{my_phase.prefix}delta_{hkl_to_str([int(hi), int(ki), int(li)])}"                          # если рефлекс лежит внутри уточняемого диапазона, он нам нужен
-              if delta_name not in pars_new: pars_new.add(my_phase.param_delta[delta_name])                           # Добавляем интенсивность рефлекса в набор параметров для уточнения, если её там нет
+              if delta_name not in pars_new: 
+                 pars_new.add(my_phase.param_delta[delta_name])                           # Добавляем интенсивность рефлекса в набор параметров для уточнения, если её там нет
               pars_new.get(delta_name).vary=True                                                                      # Открываем её для уточнения
               if [hi,ki,li] not in project_object.__dict__.get(prefix_KPhase.replace('_','')).setting['calibrate']: 
                 project_object.__dict__.get(prefix_KPhase.replace('_','')).setting['calibrate'].append([hi,ki,li])    # Добавляем индексы этих рефлексов в setting для фазы
@@ -314,6 +315,15 @@ def params_for_next(project_object,     #: Project,
           for par_form in pars_form:
             if pars_new.get(par).expr is None: 
               pars_new.get(par_form).vary = True
+
+        # --- background groups ---
+        if par == "bckg_all":
+            for name in [k for k in pars_new.keys() if is_background_param(k) and k.startswith("bckg")]:
+                pars_new.get(name).vary = True
+
+        if par == "s_all":
+            for name in [k for k in pars_new.keys() if is_background_param(name) and name.startswith("s")]:
+                pars_new.get(name).vary = True        
 
     ## Фиксация параметров, у которых есть expr
     #for k,v in pars_new.items():
