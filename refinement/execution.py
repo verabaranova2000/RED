@@ -2,7 +2,6 @@
 from .metrics import profile_R_factor
 from .session import RefinementSession
 from .param_utils import params_for_next, val_delta_percent
-from refinement.param_utils import expand_param_markers
 from .schema.models import StepModel
 from .segment import resolve_segment
 
@@ -55,13 +54,13 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
             kwargs = hook.copy()
             # если refonly не задан в YAML — берём step.params
             kwargs.setdefault("refonly", step.params)
-            my_pars = params_for_next(pr, out_prev, **kwargs)
+            my_pars, resolved = params_for_next(pr, out_prev, **kwargs)
     # если pre отсутствует — обычная подготовка параметров
     else:
-        my_pars = params_for_next(pr, out_prev, refonly=step.params)
+        my_pars, resolved = params_for_next(pr, out_prev, refonly=step.params)
 
-    # --- разворачиваем маркеры интенсивностей / фона ---
-    step.params = expand_param_markers(step.params, my_pars)
+    # --- подставляем реальные параметры вместо маркеров ---
+    step.params = step.params = list(resolved)
 
 
     # --- resolve segment ---

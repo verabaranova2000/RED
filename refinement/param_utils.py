@@ -169,6 +169,114 @@ def deepcopy_params(params):
 # Подготовка набора параметров к новому уточнению 
 # ============================================================
 
+def parse_marker(par):
+    """
+    Разбирает маркер refonly на префикс и тип.
+
+    Возвращает:
+        prefix : str | None    # префикс фазы или None
+        kind   : str           # тип маркера
+    """
+    # глобальные маркеры (все фазы, все параметры ∃-е в pars)
+    if par in ["I_hkl", "delta_hkl", "s_all", "bckg_all"]:
+        return None, par
+    # фазовые маркеры с сегментом (одна фаза, все параметры внутри сегмента: если они !∃ в pars, добавляем в pars)
+    for suffix in ["_I_inside", "_delta_inside"]:
+        if par.endswith(suffix):
+            prefix = par[:-len(suffix)]
+            return prefix, suffix
+    # фазовые маркеры без сегмента (одна фаза, все параметры ∃-е в pars)
+    for suffix in ["_I_hkl", "_delta_hkl", "_profile"]:
+        if par.endswith(suffix):
+            prefix = par[:-len(suffix)]
+            return prefix, suffix
+    # обычный параметр
+    return None, par
+
+
+def resolve_refonly(refonly, pars_new, project_object, out, segment=None):
+    """
+    Преобразует список refonly в полный набор параметров, которые нужно открыть.
+    """
+    resolved = set()
+    for par in refonly:
+        prefix, kind = parse_marker(par)
+        # --- фоновые параметры (∃-ие в pars) ---
+        if kind == "s_all":
+            resolved.update(p for p in pars_new if p.startswith("s") and is_background_param(p))
+        elif kind == "bckg_all":
+            resolved.update(p for p in pars_new if p.startswith("bckg") and is_background_param(p))
+
+        # --- все интенсивности (∃-ие в pars) ---
+        elif kind == "I_hkl":
+            resolved.update(p for p in pars_new if "_I_" in p)
+
+        # --- все дельты (∃-ие в pars) ---
+        elif kind == "delta_hkl":
+            resolved.update(p for p in pars_new if "_delta_" in p)
+
+        # --- все интенсивности фазы (∃-ие в pars) ---
+        elif kind == "_I_hkl":
+            resolved.update(p for p in pars_new if prefix+"_I_" in p)
+
+        # --- все дельты фазы (∃-ие в pars) ---
+        elif kind == "_delta_hkl":
+            resolved.update(p for p in pars_new if prefix+"_delta_" in p)
+
+        # --- все интенсивности фазы внутри сегмента ---
+        elif kind == "_I_inside":
+            segm = out.userkws['axes'] if segment is None else segment
+            phase = project_object.__dict__[prefix]
+            for line in phase.bragg_positions:
+                h,k,l = line[:3]
+                if check_hkl_in_segment(segm, phase, h, k, l):
+                    name = f"{phase.prefix}I_{hkl_to_str([int(h), int(k), int(l)])}"
+                    if name not in pars_new:
+                        pars_new.add(phase.param_intensity[name])
+                    resolved.add(name)
+                    if phase.setting['typeref'] != 'le Beil':
+                        if [h,k,l] not in phase.setting['corrections']:
+                            phase.setting['corrections'].append([h,k,l])
+       
+        # ---- все дельты фазы внутри сегмента ----
+        elif kind == "_delta_inside":
+            segm = out.userkws['axes'] if segment is None else segment
+            phase = project_object.__dict__[prefix]
+            for line in phase.bragg_positions:
+                h,k,l = line[:3]
+                if check_hkl_in_segment(segm, phase, h, k, l):
+                    name = f"{phase.prefix}delta_{hkl_to_str([int(h), int(k), int(l)])}"
+                    if name not in pars_new:
+                        pars_new.add(phase.param_delta[name])
+                    resolved.add(name)
+                    if [h,k,l] not in phase.setting['calibrate']:
+                        phase.setting['calibrate'].append([h,k,l])
+
+        # --- параметры формы пиков фазы ---
+        elif kind == "_profile":
+            phase = project_object.__dict__[prefix]
+            pars_form = [k for k in pars_new
+                         if (len(set(model_list).intersection(k.split('_'))) > 0) and prefix in k]
+            resolved.update(pars_form)
+  
+        # --- обычный параметр ---
+        else:
+          if par not in pars_new:
+            raise ValueError(f"Неизвестный параметр '{par}'")
+          resolved.add(par)
+    return resolved
+
+
+def apply_refonly(pars, pars_new):
+    """
+    Фиксирует vary=True для всех параметров, которые нужно уточнять,
+    кроме тех, у которых expr.
+    """
+    for p in pars:
+        if pars_new[p].expr is None:
+            pars_new[p].vary = True
+
+
 def params_for_next(project_object,     #: Project, 
                     model_result, 
                     canсel_lastref: Optional[List[str]] = None, 
@@ -189,6 +297,19 @@ def params_for_next(project_object,     #: Project,
     - фиксацию всех параметров
     - открытие выбранных параметров для уточнения
 
+    Обработка аргумента ``refonly`` выполняется в два этапа:
+
+    refonly (маркеры и/или реальные параметры)
+    ↓
+    resolve_refonly
+    ├─ раскрывает маркеры (I_hkl, Phase_I_inside, s_all и т.д.)
+    ├─ добавляет отсутствующие параметры в pars_new
+    ├─ обновляет настройки фаз (phase.setting)
+    └─ формирует список реальных параметров → resolved
+    ↓
+    apply_refonly
+    └─ открывает параметры для уточнения (vary=True)
+    
     Parameters
     ----------
     project : Project
@@ -211,7 +332,7 @@ def params_for_next(project_object,     #: Project,
         выбранных параметров для уточнения.
 
     refonly : list of str, optional
-        Список параметров или групп параметров, которые
+        Список параметров и/или маркеров, которые
         должны быть открыты для уточнения.
 
     segment : tuple or None, optional
@@ -220,9 +341,14 @@ def params_for_next(project_object,     #: Project,
 
     Returns
     -------
-    lmfit.Parameters
+    pars_new : lmfit.Parameters
         Новый набор параметров, подготовленный для следующего
         шага уточнения.
+
+    resolved : list of str
+        Список реальных параметров, полученных после раскрытия
+        маркеров refonly. Используется для логирования и
+        отображения параметров шага уточнения.
     """
     out=model_result
     pars_new=deepcopy_params(out.params)                                            # создаем глубокую копию, чтобы не изменялось состояние объекта
@@ -258,73 +384,12 @@ def params_for_next(project_object,     #: Project,
       for v,k in pars_new.items():
         k.vary=False
 
-    # --- 5. Открываем для уточнения параметры, перечисленные в квадратных скобках ---
-    if refonly is not None and isinstance(refonly, list):
-      if 'I_hkl' in refonly:                                        # Если хотим уточнить все интенсивности в методе le Beil
-        for par in [k for k,v in pars_new.items() if '_I_' in k]: 
-          pars_new.get(par).vary=True                               # Открываем все интенсивности для уточнения
+    # --- 5. Обрабатываем refonly (добавляет параметры, меняет setting); возвр. реальные параметры
+    if refonly:
+        resolved = resolve_refonly(refonly, pars_new, project_object, out, segment)
+        apply_refonly(resolved, pars_new)
 
-      if 'delta_hkl' in refonly:                                    # Если хотим уточнить сдвиги всех пиков
-        for par in [k for k,v in pars_new.items() if '_delta_' in k]: 
-          pars_new.get(par).vary=True                               # Открываем все сдвиги пиков для уточнения
- 
-
-      for par in refonly:                                           # Если подаем список параметров для уточнения
-        assert (par in [k for k,v in pars_new.items()]+['I_hkl', 'delta_hkl']) or ('_I_hkl' in par) or ('_I_inside' in par) or ('_profile' in par) # прерываем, если названия параметра нет в списке
-        if par in [k for k,v in pars_new.items()] and (pars_new.get(par).expr is None):
-          pars_new.get(par).vary=True                               # открываем параметр для уточнения
-
-        # --- 5.1. Уточнение группы параметров для какой-то фазы ---
-        if '_I_hkl' in par:                                         # Если хотим уточнить все интенсивности только одной фазы
-          prefix_KPhase=par.split('_')[0]                           # Префикс этой фазы, интенсивности которой хотим уточнить
-          for parI in [k for k,v in pars_new.items() if prefix_KPhase+'_I_' in k]: 
-            pars_new.get(parI).vary=True
-
-        if '_I_inside' in par:                                      # Если хотим уточнить все интенсивности только одной фазы
-          prefix_KPhase=par.split('_')[0]                           # Префикс этой фазы, интенсивности которой хотим уточнить
-          segm = out.userkws['axes'] if segment is None else segment
-          my_phase = project_object.__dict__.get(prefix_KPhase.replace('_',''))
-          for line in my_phase.bragg_positions:
-            hi,ki,li=line[:3]
-            if check_hkl_in_segment(segm, my_phase,h=hi,k=ki,l=li):
-              I_name=f"{my_phase.prefix}I_{hkl_to_str([int(hi), int(ki), int(li)])}"        # если рефлекс лежит внутри уточняемого диапазона, он нам нужен
-              if I_name not in pars_new: pars_new.add(my_phase.param_intensity[I_name])     # Добавляем интенсивность рефлекса в набор параметров для уточнения, если её там нет
-              pars_new.get(I_name).vary=True                                                # Открываем её для уточнения
-              if project_object.__dict__.get(prefix_KPhase.replace('_','')).setting['typeref']!='le Beil' and [hi,ki,li] not in project_object.__dict__.get(prefix_KPhase.replace('_','')).setting['corrections']: 
-                project_object.__dict__.get(prefix_KPhase.replace('_','')).setting['corrections'].append([hi,ki,li])  # Добавляем индексы этих рефлексов в sitting для фазы
-
-        # --- 5.2. Уточнение группы параметров для какой-то фазы ---
-        if '_delta_hkl' in par:                                                   # Если хотим уточнить сдвиги всех пиков только одной фазы
-          prefix_KPhase=par.split('_')[0]                                         # Префикс этой фазы, сдвиги пиков которой хотим уточнить
-          for pardelta in [k for k,v in pars_new.items() if prefix_KPhase+'_delta_' in k]: 
-            pars_new.get(pardelta).vary=True
-
-        if '_delta_inside' in par:                                                # Если хотим уточнить сдвиги всех пиков только одной фазы
-          prefix_KPhase=par.split('_')[0]                                         # Префикс этой фазы, сдвиги пиков которой хотим уточнить
-          segm = out.userkws['axes'] if segment is None else segment
-          my_phase = project_object.__dict__.get(prefix_KPhase.replace('_',''))
-          for line in my_phase.bragg_positions:
-            hi,ki,li=line[:3]
-            if check_hkl_in_segment(segm, my_phase,h=hi,k=ki,l=li):
-              delta_name=f"{my_phase.prefix}delta_{hkl_to_str([int(hi), int(ki), int(li)])}"                          # если рефлекс лежит внутри уточняемого диапазона, он нам нужен
-              if delta_name not in pars_new: 
-                 pars_new.add(my_phase.param_delta[delta_name])                           # Добавляем интенсивность рефлекса в набор параметров для уточнения, если её там нет
-              pars_new.get(delta_name).vary=True                                                                      # Открываем её для уточнения
-              if [hi,ki,li] not in project_object.__dict__.get(prefix_KPhase.replace('_','')).setting['calibrate']: 
-                project_object.__dict__.get(prefix_KPhase.replace('_','')).setting['calibrate'].append([hi,ki,li])    # Добавляем индексы этих рефлексов в setting для фазы
-
-        if '_profile' in par:                                                   # Если хотим уточнить все параметры формы пиков для какой-то фазы
-          prefix_KPhase=par.split('_')[0]
-          pars_form = [k for k,v in pars_new.items() if (len(set(model_list).intersection(k.split('_'))) > 0) and (prefix_KPhase in k)] ### Извлекли названия параметров формы
-          for par_form in pars_form:
-            if pars_new.get(par).expr is None: 
-              pars_new.get(par_form).vary = True     
-
-
-    ## Фиксация параметров, у которых есть expr
-    #for k,v in pars_new.items():
-    # if v.expr!=None: pars_new[k].vary=False
-    return pars_new
+    return pars_new, resolved
 
 
 
