@@ -266,20 +266,19 @@ def params_for_next(project_object,     #: Project,
           pars_new.get(par).vary=True                               # Открываем все сдвиги пиков для уточнения
 
 # ДЕБАГ
+      print("DEBUG refonly:", repr(refonly))
       for par in refonly:
-          # на всякий случай strip, если где-то пробелы
-          if isinstance(par, str):
-              par = par.strip()
-          allowed = list(pars_new.keys()) + ['I_hkl', 'delta_hkl', 's_all', 'bckg_all']
+          if not isinstance(par, str):
+              print("!!! not a string:", repr(par))
+          par = str(par).strip()
+          allowed = list(pars_new.keys()) + ['I_hkl','delta_hkl','s_all','bckg_all']
           condition = (
-              par in allowed
-              or '_I_hkl' in par
-              or '_I_inside' in par
-              or '_profile' in par
+            par in allowed
+            or '_I_hkl' in par
+            or '_I_inside' in par
+            or '_profile' in par
           )
-          # здесь мы точно увидим, что ломается
           assert condition, f"Unknown parameter marker in refonly: {repr(par)}"
-
 
       for par in refonly:                                           # Если подаем список параметров для уточнения
         assert (par in [k for k,v in pars_new.items()]+['I_hkl', 'delta_hkl', 's_all', 'bckg_all']) or ('_I_hkl' in par) or ('_I_inside' in par) or ('_profile' in par) # прерываем, если названия параметра нет в списке
