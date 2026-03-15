@@ -54,6 +54,7 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
             kwargs = hook.copy()
             # если refonly не задан в YAML — берём step.params
             kwargs.setdefault("refonly", step.params)
+            print('kwargs:', kwargs)
             my_pars = params_for_next(pr, out_prev, **kwargs)
     # если pre отсутствует — обычная подготовка параметров
     else:
