@@ -250,6 +250,14 @@ def params_for_next(project_object,     #: Project,
           if I_name not in pars_new: 
             pars_new.add(Phasei.param_intensity[I_name])
 
+    # --- background groups ---
+    if par == "bckg_all":
+        for name in [k for k in pars_new.keys() if is_background_param(k) and k.startswith("bckg")]:
+            pars_new.get(name).vary = True
+    if par == "s_all":
+        for name in [k for k in pars_new.keys() if is_background_param(name) and name.startswith("s")]:
+            pars_new.get(name).vary = True   
+
     # --- 4. Фиксируем все параметры ---
     if fix:                                                         
       for v,k in pars_new.items():
@@ -265,20 +273,6 @@ def params_for_next(project_object,     #: Project,
         for par in [k for k,v in pars_new.items() if '_delta_' in k]: 
           pars_new.get(par).vary=True                               # Открываем все сдвиги пиков для уточнения
 
-# ДЕБАГ
-      print("DEBUG refonly:", repr(refonly))
-      for par in refonly:
-          if not isinstance(par, str):
-              print("!!! not a string:", repr(par))
-          par = str(par).strip()
-          allowed = list(pars_new.keys()) + ['I_hkl','delta_hkl','s_all','bckg_all']
-          condition = (
-            par in allowed
-            or '_I_hkl' in par
-            or '_I_inside' in par
-            or '_profile' in par
-          )
-          assert condition, f"Unknown parameter marker in refonly: {repr(par)}"
 
       for par in refonly:                                           # Если подаем список параметров для уточнения
         assert (par in [k for k,v in pars_new.items()]+['I_hkl', 'delta_hkl', 's_all', 'bckg_all']) or ('_I_hkl' in par) or ('_I_inside' in par) or ('_profile' in par) # прерываем, если названия параметра нет в списке
@@ -329,16 +323,7 @@ def params_for_next(project_object,     #: Project,
           pars_form = [k for k,v in pars_new.items() if (len(set(model_list).intersection(k.split('_'))) > 0) and (prefix_KPhase in k)] ### Извлекли названия параметров формы
           for par_form in pars_form:
             if pars_new.get(par).expr is None: 
-              pars_new.get(par_form).vary = True
-
-        # --- background groups ---
-        if par == "bckg_all":
-            for name in [k for k in pars_new.keys() if is_background_param(k) and k.startswith("bckg")]:
-                pars_new.get(name).vary = True
-
-        if par == "s_all":
-            for name in [k for k in pars_new.keys() if is_background_param(name) and name.startswith("s")]:
-                pars_new.get(name).vary = True        
+              pars_new.get(par_form).vary = True     
 
     ## Фиксация параметров, у которых есть expr
     #for k,v in pars_new.items():
