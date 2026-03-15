@@ -264,7 +264,7 @@ def resolve_refonly(refonly, pars_new, project_object, out, segment=None):
           if par not in pars_new:
             raise ValueError(f"Неизвестный параметр '{par}'")
           resolved.add(par)
-    return resolved
+    return [p for p in pars_new if p in resolved]
 
 
 def apply_refonly(pars, pars_new):
@@ -350,8 +350,8 @@ def params_for_next(project_object,     #: Project,
         маркеров refonly. Используется для логирования и
         отображения параметров шага уточнения.
     """
-    out=model_result
-    pars_new=deepcopy_params(out.params)                                            # создаем глубокую копию, чтобы не изменялось состояние объекта
+    out = model_result
+    pars_new = deepcopy_params(out.params)                                            # создаем глубокую копию, чтобы не изменялось состояние объекта
 
     # --- 1. Отмена результатов последнего уточнения для перечисленных в квадратных скобках параметров
     if canсel_lastref is not None and isinstance(canсel_lastref, list):             # чтобы отменить результаты последнего уточнения некоторых параметров и вернуться к начальным значениям
