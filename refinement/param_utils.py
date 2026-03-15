@@ -265,9 +265,9 @@ def params_for_next(project_object,     #: Project,
         for par in [k for k,v in pars_new.items() if '_delta_' in k]: 
           pars_new.get(par).vary=True                               # Открываем все сдвиги пиков для уточнения
 
+
       for par in refonly:                                           # Если подаем список параметров для уточнения
-        print("DEBUG:", repr(par))
-        assert (par in [k for k,v in pars_new.items()]+['I_hkl', 'delta_hkl', "s_all", "bckg_all"]) or ('_I_hkl' in par) or ('_I_inside' in par) or ('_profile' in par) # прерываем, если названия параметра нет в списке
+        assert (par in [k for k,v in pars_new.items()]+['I_hkl', 'delta_hkl', 's_all', 'bckg_all']) or ('_I_hkl' in par) or ('_I_inside' in par) or ('_profile' in par) # прерываем, если названия параметра нет в списке
         if par in [k for k,v in pars_new.items()] and (pars_new.get(par).expr is None):
           pars_new.get(par).vary=True                               # открываем параметр для уточнения
 
