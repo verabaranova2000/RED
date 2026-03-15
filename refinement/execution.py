@@ -59,7 +59,7 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
     else:
         my_pars = params_for_next(pr, out_prev, refonly=step.params)
 
-    # --- разворачиваем маркеры интенсивностей ---
+    # --- разворачиваем маркеры интенсивностей/фона ---
     step.params = expand_param_markers(step.params, my_pars)
 
     # --- resolve segment ---

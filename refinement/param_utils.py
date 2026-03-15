@@ -165,8 +165,10 @@ def deepcopy_params(params):
     return params_new
 
 
+# ============================================================
+# Подготовка набора параметров к новому уточнению 
+# ============================================================
 
-# ====== Подготовка набора параметров к новому уточнению 
 def params_for_next(project_object,     #: Project, 
                     model_result, 
                     canсel_lastref: Optional[List[str]] = None, 
@@ -265,10 +267,15 @@ def params_for_next(project_object,     #: Project,
       if 'delta_hkl' in refonly:                                    # Если хотим уточнить сдвиги всех пиков
         for par in [k for k,v in pars_new.items() if '_delta_' in k]: 
           pars_new.get(par).vary=True                               # Открываем все сдвиги пиков для уточнения
-         
+ 
+      if 's_all' in refonly:                                    # Если хотим уточнить все параметры фона
+        s_list = expand_background_params(['s_all'], pars_new)
+        for par in s_list:
+          pars_new.get(par).vary=True                          # Открываем все узлы сплайна для уточнения
+
 
       for par in refonly:                                           # Если подаем список параметров для уточнения
-        assert (par in [k for k,v in pars_new.items()]+['I_hkl', 'delta_hkl']) or ('_I_hkl' in par) or ('_I_inside' in par) or ('_profile' in par) # прерываем, если названия параметра нет в списке
+        assert (par in [k for k,v in pars_new.items()]+['I_hkl', 'delta_hkl', 's_all']) or ('_I_hkl' in par) or ('_I_inside' in par) or ('_profile' in par) # прерываем, если названия параметра нет в списке
         if par in [k for k,v in pars_new.items()] and (pars_new.get(par).expr is None):
           pars_new.get(par).vary=True                               # открываем параметр для уточнения
 
@@ -435,16 +442,20 @@ def expand_background_params(params_list, pars):
     -------
     list[str]
         Развёрнутый список параметров.
+
+    Baжно
+    ------
+    Если параметров s* / bckg* нет, то функция вернет [], т.е. маркер просто пропадет.
     """
     expanded = []
     for p in params_list:
         m = BACKGROUND_ALL_PATTERN.match(p)
-        if m:
+        if m:                   # маркер разворачивается в список пар-в; список пар-ров добавляется в набор вместо маркера
             prefix = m.group(1)
-            expanded.extend(sorted(name for name in pars.keys()
-                                   if name.startswith(prefix) and is_background_param(name)))
+            expanded.extend(name for name in pars.keys()
+                            if name.startswith(prefix) and is_background_param(name))
         else:
-            expanded.append(p)
+            expanded.append(p)   # обысный параметр добавляется в набор
     return expanded
 
 
