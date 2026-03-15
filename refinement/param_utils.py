@@ -323,13 +323,16 @@ def params_for_next(project_object,     #: Project,
 
 
 
-
-# ====== Утилиты для работы с именами параметров refinement ====== 
+# ============================================================
+# Background parameter utilities
+# ============================================================
 
 BACKGROUND_PARAM_PATTERN = re.compile(r"^(bckg|s)\d+$")   # допустимые параметры фона:  bckg0, bckg1, ...; s0, s1, ...
-# (bckg|s)	- префикс
-# \d+	      - одно или больше чисел
-# $	        - конец строки
+"""
+(bckg|s) - префикс
+\d+	     - одно или больше чисел
+$	     - конец строки
+"""
 def is_background_param(name: str) -> bool:
     """
     Проверить, является ли параметр параметром фона.
@@ -337,16 +340,6 @@ def is_background_param(name: str) -> bool:
     Поддерживаемые форматы:
     - bckg0, bckg1, ...
     - s0, s1, ...
-
-    Параметры
-    ---------
-    name : str
-        Имя параметра модели.
-
-    Возвращает
-    ----------
-    bool
-        True, если параметр соответствует шаблону фонового параметра.
     """
     return bool(BACKGROUND_PARAM_PATTERN.match(name))
 
@@ -369,7 +362,55 @@ def parse_background_param(name: str):
     idx = int(name[len(prefix):])
     return prefix, idx
 
-# ==== Разворачивание маркеров типа "s_all", "bckg_all" в реальные параметры ====
+
+
+# ============================================================
+# Intensity parameter utilities
+# ============================================================
+
+# ==== Разворачивание маркеров типа "Phase1_I_inside" в реальные параметры ====
+INTENSITY_PARAM_PATTERN = re.compile(r".+_I_\d+_\d+_\d+$")
+def is_intensity_param(name: str) -> bool:
+    """
+    Проверить, является ли параметр параметром интенсивности.
+    Шаблон: 
+      Phase1_I_1_1_1
+      Phase1_I_2_0_0
+    """
+    return "_I_" in name
+
+def extract_intensity_params(pars, prefix=None):
+    """
+    Извлечение параметров из набора: какие параметры интенсивностей есть в наборе?
+    Возвращает список параметров интенсивностей I_hkl из lmfit.Parameters.
+
+    Parameters
+    ----------
+    pars : lmfit.Parameters
+        Набор параметров модели.
+
+    prefix : str, optional
+        Префикс фазы (например 'Phase1_').
+        Если указан — выбираются только интенсивности этой фазы.
+
+    Returns
+    -------
+    list[str]
+        Список имён параметров интенсивностей.
+    """
+    names = []
+    for name in pars.keys():
+        if is_intensity_param(name):
+            if prefix is None or name.startswith(prefix):
+                names.append(name)
+    return names
+
+
+
+# ============================================================
+# YAML marker expanders
+# ============================================================
+
 BACKGROUND_ALL_PATTERN = re.compile(r"^(bckg|s)_all$")
 def expand_background_params(params_list, pars):
     """
@@ -404,45 +445,6 @@ def expand_background_params(params_list, pars):
     return expanded
 
 
-# ==== Разворачивание маркеров типа "Phase1_I_inside" в реальные параметры ====
-INTENSITY_PARAM_PATTERN = re.compile(r".+_I_\d+_\d+_\d+$")
-def is_intensity_param(name: str) -> bool:
-    """
-    Классификация параметра: это параметр интенсивности или нет?
-    Шаблон: 
-      Phase1_I_1_1_1
-      Phase1_I_2_0_0
-    """
-    return "_I_" in name
-
-
-def extract_intensity_params(pars, prefix=None):
-    """
-    Извлечение параметров из набора: какие параметры интенсивностей есть в наборе?
-    Возвращает список параметров интенсивностей I_hkl из lmfit.Parameters.
-
-    Parameters
-    ----------
-    pars : lmfit.Parameters
-        Набор параметров модели.
-
-    prefix : str, optional
-        Префикс фазы (например 'Phase1_').
-        Если указан — выбираются только интенсивности этой фазы.
-
-    Returns
-    -------
-    list[str]
-        Список имён параметров интенсивностей.
-    """
-    names = []
-    for name in pars.keys():
-        if is_intensity_param(name):
-            if prefix is None or name.startswith(prefix):
-                names.append(name)
-    return names
-
-# --- Функция разворачивания *_I_inside ---
 def expand_intensity_params(params_list, pars):
     """
     Разворачивание YAML-маркеров.
@@ -458,8 +460,6 @@ def expand_intensity_params(params_list, pars):
     return expanded
 
 
-
-
 PARAM_EXPANDERS = [expand_intensity_params,
                    expand_background_params]
 def expand_param_markers(params_list, pars):
@@ -471,8 +471,8 @@ def expand_param_markers(params_list, pars):
         bckg_all
         s_all
 
-    Call flow
-    ---------
+    Expansion pipeline
+    ------------------
     expand_param_markers
         -> expand_intensity_params
         -> expand_background_params
@@ -496,7 +496,9 @@ def expand_param_markers(params_list, pars):
 
 
 
-
+# ============================================================
+# Parameter grouping for reports
+# ============================================================
 
 def split_param_groups(param_data):
     """
