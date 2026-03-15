@@ -265,15 +265,10 @@ def params_for_next(project_object,     #: Project,
       if 'delta_hkl' in refonly:                                    # Если хотим уточнить сдвиги всех пиков
         for par in [k for k,v in pars_new.items() if '_delta_' in k]: 
           pars_new.get(par).vary=True                               # Открываем все сдвиги пиков для уточнения
-
-      if 's_all' in refonly:
-         s_list = expand_background_params(refonly, pars_new)
-         for par in s_list:
-            pars_new.get(par).vary=True
          
 
       for par in refonly:                                           # Если подаем список параметров для уточнения
-        assert (par in [k for k,v in pars_new.items()]+['I_hkl', 'delta_hkl', 's_all', 'bckg_all']) or ('_I_hkl' in par) or ('_I_inside' in par) or ('_profile' in par) # прерываем, если названия параметра нет в списке
+        assert (par in [k for k,v in pars_new.items()]+['I_hkl', 'delta_hkl']) or ('_I_hkl' in par) or ('_I_inside' in par) or ('_profile' in par) # прерываем, если названия параметра нет в списке
         if par in [k for k,v in pars_new.items()] and (pars_new.get(par).expr is None):
           pars_new.get(par).vary=True                               # открываем параметр для уточнения
 
@@ -323,13 +318,6 @@ def params_for_next(project_object,     #: Project,
             if pars_new.get(par).expr is None: 
               pars_new.get(par_form).vary = True     
 
-        # --- background groups ---
-        if par == "bckg_all":
-            for name in [k for k in pars_new.keys() if is_background_param(k) and k.startswith("bckg")]:
-                pars_new.get(name).vary = True
-        if par == "s_all":
-            for name in [k for k in pars_new.keys() if is_background_param(name) and name.startswith("s")]:
-                pars_new.get(name).vary = True   
 
     ## Фиксация параметров, у которых есть expr
     #for k,v in pars_new.items():
