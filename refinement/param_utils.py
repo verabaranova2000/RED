@@ -259,6 +259,7 @@ def params_for_next(project_object,     #: Project,
         k.vary=False
 
     # --- 5. Открываем для уточнения параметры, перечисленные в квадратных скобках ---
+    print('isinstance(refonly, list):', isinstance(refonly, list))
     if refonly is not None and isinstance(refonly, list):
       if 'I_hkl' in refonly:                                        # Если хотим уточнить все интенсивности в методе le Beil
         for par in [k for k,v in pars_new.items() if '_I_' in k]: 
