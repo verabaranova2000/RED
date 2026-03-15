@@ -259,7 +259,6 @@ def params_for_next(project_object,     #: Project,
         k.vary=False
 
     # --- 5. Открываем для уточнения параметры, перечисленные в квадратных скобках ---
-    print('isinstance(refonly, list):', isinstance(refonly, list))
     if refonly is not None and isinstance(refonly, list):
       if 'I_hkl' in refonly:                                        # Если хотим уточнить все интенсивности в методе le Beil
         for par in [k for k,v in pars_new.items() if '_I_' in k]: 
@@ -269,10 +268,10 @@ def params_for_next(project_object,     #: Project,
         for par in [k for k,v in pars_new.items() if '_delta_' in k]: 
           pars_new.get(par).vary=True                               # Открываем все сдвиги пиков для уточнения
  
-      if 's_all' in refonly:                                    # Если хотим уточнить все параметры фона
-        s_list = expand_background_params(['s_all'], pars_new)
-        for par in s_list:
-          pars_new.get(par).vary=True                          # Открываем все узлы сплайна для уточнения
+#      if 's_all' in refonly:                                    # Если хотим уточнить все параметры фона
+#        s_list = expand_background_params(['s_all'], pars_new)
+#        for par in s_list:
+#          pars_new.get(par).vary=True                          # Открываем все узлы сплайна для уточнения
 
 
       for par in refonly:                                           # Если подаем список параметров для уточнения
