@@ -2,7 +2,7 @@
 from .metrics import profile_R_factor
 from .session import RefinementSession
 from .param_utils import params_for_next, val_delta_percent
-from refinement.param_utils import expand_param_intensity
+from refinement.param_utils import expand_param_markers
 from .schema.models import StepModel
 from .segment import resolve_segment
 
@@ -60,7 +60,7 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
         my_pars = params_for_next(pr, out_prev, refonly=step.params)
 
     # --- разворачиваем маркеры интенсивностей ---
-    step.params = expand_param_intensity(step.params, my_pars)
+    step.params = expand_param_markers(step.params, my_pars)
 
     # --- resolve segment ---
     y = pr.Profile_points.I_obs
@@ -78,23 +78,6 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
     Rp = profile_R_factor(y_obs=pr.Profile_points.I_obs,
                           y_calc=pr.Profile_points.I_calc)
     session.report_Rp(Rp)
-
-#    normal_params = {}
-#    background_params = {}
-
-#    for p in step.params:
-#        value, delta_percent = val_delta_percent(out.params, p)
-
-#        if is_background_param(p):
-#            background_params[p] = (value, delta_percent)
-#        else:
-#            normal_params[p] = (value, delta_percent)
-
-#    if normal_params:
-#        session.report_parameters(normal_params)
-
-#    if background_params:
-#        session.report_background_group(background_params)
 
     param_data = {}
     for p in step.params:

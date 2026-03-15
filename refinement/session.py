@@ -322,8 +322,8 @@ class RefinementSession:
         Call flow
         ---------
         report_param_groups
-            ├─ _render_param_table
-            └─ _render_param_group
+            -> _render_param_table
+            -> _render_param_group
 
         Parameters
         ----------
@@ -464,7 +464,6 @@ class RefinementSession:
         Сохранить состояние session в файл.
         """
         data = self.to_dict()
-
         with open(path, "wb") as f:
             pickle.dump(data, f)
     

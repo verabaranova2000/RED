@@ -369,6 +369,39 @@ def parse_background_param(name: str):
     idx = int(name[len(prefix):])
     return prefix, idx
 
+# ==== Разворачивание маркеров типа "s_all", "bckg_all" в реальные параметры ====
+BACKGROUND_ALL_PATTERN = re.compile(r"^(bckg|s)_all$")
+def expand_background_params(params_list, pars):
+    """
+    Разворачивание YAML-маркеров фоновых параметров.
+
+    Поддерживаемые маркеры:
+        bckg_all → bckg0, bckg1, ...
+        s_all    → s0, s1, ...
+
+    Parameters
+    ----------
+    params_list : list[str]
+        Список параметров из YAML.
+
+    pars : lmfit.Parameters
+        Набор параметров модели.
+
+    Returns
+    -------
+    list[str]
+        Развёрнутый список параметров.
+    """
+    expanded = []
+    for p in params_list:
+        m = BACKGROUND_ALL_PATTERN.match(p)
+        if m:
+            prefix = m.group(1)
+            expanded.extend(sorted(name for name in pars.keys()
+                                   if name.startswith(prefix) and is_background_param(name)))
+        else:
+            expanded.append(p)
+    return expanded
 
 
 # ==== Разворачивание маркеров типа "Phase1_I_inside" в реальные параметры ====
@@ -383,7 +416,7 @@ def is_intensity_param(name: str) -> bool:
     return "_I_" in name
 
 
-def extract_param_intensity(pars, prefix=None):
+def extract_intensity_params(pars, prefix=None):
     """
     Извлечение параметров из набора: какие параметры интенсивностей есть в наборе?
     Возвращает список параметров интенсивностей I_hkl из lmfit.Parameters.
@@ -410,7 +443,7 @@ def extract_param_intensity(pars, prefix=None):
     return names
 
 # --- Функция разворачивания *_I_inside ---
-def expand_param_intensity(params_list, pars):
+def expand_intensity_params(params_list, pars):
     """
     Разворачивание YAML-маркеров.
     Заменяет маркеры типа 'Phase1_I_inside' на реальные параметры интенсивностей.
@@ -419,10 +452,50 @@ def expand_param_intensity(params_list, pars):
     for p in params_list:
         if p.endswith("_I_inside"):
             prefix = p.replace("I_inside", "")
-            expanded.extend(extract_param_intensity(pars, prefix))
+            expanded.extend(extract_intensity_params(pars, prefix))
         else:
             expanded.append(p)
     return expanded
+
+
+
+
+PARAM_EXPANDERS = [expand_intensity_params,
+                   expand_background_params]
+def expand_param_markers(params_list, pars):
+    """
+    Развернуть все YAML-маркеры параметров.
+
+    Поддерживаемые маркеры:
+        PhaseX_I_inside
+        bckg_all
+        s_all
+
+    Call flow
+    ---------
+    expand_param_markers
+        -> expand_intensity_params
+        -> expand_background_params
+
+    Parameters
+    ----------
+    params_list : list[str]
+        Список параметров из YAML.
+
+    pars : lmfit.Parameters
+        Набор параметров модели.
+
+    Returns
+    -------
+    list[str]
+        Развёрнутый список параметров.
+    """
+    params = expand_intensity_params(params_list, pars)
+    params = expand_background_params(params, pars)
+    return params
+
+
+
 
 
 def split_param_groups(param_data):

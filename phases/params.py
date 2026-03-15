@@ -136,8 +136,8 @@ def create_par_profile(prefix_KPhase: str, form: FORM, ampl: bool = False, cente
     objects.get(object_name).min   = min
     objects.get(object_name).max   = max
     objects.get(object_name)._vary = False
-  if ampl==False: del objects[prefix_KPhase + form + '_A']   # Удаляем амплитуду из параметров, если ampl=False
-  if ampl==False: del objects[prefix_KPhase + form + '_μ']   # Удаляем положение центра из параметров, если center=False
+  if ampl is False: del objects[prefix_KPhase + form + '_A']   # Удаляем амплитуду из параметров, если ampl=False
+  if ampl is False: del objects[prefix_KPhase + form + '_μ']   # Удаляем положение центра из параметров, если center=False
   return objects
 
 
