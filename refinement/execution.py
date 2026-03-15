@@ -2,7 +2,7 @@
 from .metrics import profile_R_factor
 from .session import RefinementSession
 from .param_utils import params_for_next, val_delta_percent
-from refinement.param_utils import expand_param_markers
+from refinement.param_utils import expand_background_params, expand_intensity_params
 from .schema.models import StepModel
 from .segment import resolve_segment
 
@@ -48,20 +48,24 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
     - Функция не изменяет саму схему. Обновляет параметры объекта Project и сессию.
     """
     session.iter_exec_step += 1
+
+    #s_list = expand_background_params(['s_all'], pars_new)
+    # --- разворачиваем маркеры фона ---
+    step.params = expand_background_params(step.params, out_prev)
     # --- pre hooks ---
     if step.pre:
         for hook in step.pre:
             kwargs = hook.copy()
             # если refonly не задан в YAML — берём step.params
             kwargs.setdefault("refonly", step.params)
-            print('kwargs:', kwargs)
             my_pars = params_for_next(pr, out_prev, **kwargs)
     # если pre отсутствует — обычная подготовка параметров
     else:
         my_pars = params_for_next(pr, out_prev, refonly=step.params)
 
-    # --- разворачиваем маркеры интенсивностей/фона ---
-    step.params = expand_param_markers(step.params, my_pars)
+    # --- разворачиваем маркеры интенсивностей ---
+#    step.params = expand_param_markers(step.params, my_pars)
+    step.params = expand_intensity_params(step.params, my_pars)
 
     # --- resolve segment ---
     y = pr.Profile_points.I_obs
