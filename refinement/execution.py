@@ -76,7 +76,7 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
     # --- основной fit ---
     out = pr.model.fit(y[s_idx:e_idx+1], axes=two_theta[s_idx:e_idx+1], params=my_pars)
     pr.params = out.params
-    Rp = profile_R_factor(y_obs=pr.Profile_points.I_obs,
+    Rp = profile_R_factor(y_obs=pr.Profile_points.I_obs_calibr,
                           y_calc=pr.Profile_points.I_calc)
     session.report_Rp(Rp)
 

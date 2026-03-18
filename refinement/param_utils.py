@@ -378,7 +378,6 @@ def params_for_next(project_object,     #: Project,
           if I_name not in pars_new: 
             pars_new.add(Phasei.param_intensity[I_name])
 
-
     # --- 4. Фиксируем все параметры ---
     if fix:                                                         
       for v,k in pars_new.items():
