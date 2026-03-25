@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
 import pickle
+import os
 
 from utils.logging_setup import logger, BASE_FORMAT
 from refinement.logutils.live_header import LiveHeader
@@ -459,15 +460,49 @@ class RefinementSession:
 
 
     # ---- Сохранение в файл -------
-    def save(self, path):
+ #   def save(self, path):
+ #       """
+ #       Сохранить состояние session в файл.
+ #       """
+ #       data = self.to_dict()
+ #       with open(path, "wb") as f:
+ #           pickle.dump(data, f)
+    
+    # ---- Сохранение в файл -------
+    def save(self, path, to_drive=False, folder_name="Refinement_Logs"):
         """
         Сохранить состояние session в файл.
+
+        Parameters
+        ----------
+        path : str
+            Имя файла (без директории или с ней).
+        to_drive : bool
+            Если True — сохранить в Google Drive.
+        folder_name : str
+            Папка на Google Drive.
+
+        Examples
+        --------
+        >>> session.save("session.pkl")                # Обычно (локально / Colab tmp)
+        >>> session.save("session.pkl", to_drive=True) # В Google Drive 
         """
         data = self.to_dict()
-        with open(path, "wb") as f:
+
+        if to_drive:
+            if not os.path.exists("/content/drive"):
+                raise RuntimeError("Google Drive не смонтирован")            
+            base_dir = f"/content/drive/MyDrive/{folder_name}"
+            os.makedirs(base_dir, exist_ok=True)
+            full_path = os.path.join(base_dir, path)
+        else:
+            full_path = path
+
+        with open(full_path, "wb") as f:
             pickle.dump(data, f)
-    
-    
+        return #full_path
+
+
     # ---- Автосохранение -------
     def autosave(self):
         self.save(f"session_autosave_{self.iter_exec_schema}.pkl")
