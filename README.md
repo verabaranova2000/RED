@@ -1,6 +1,6 @@
 # Rietveld-based Electron Diffraction Refinement (RED)
 
-## 📌 Overview
+## Overview
 
 This project implements a Python-based pipeline for **sequential refinement of diffraction data parameters** using a Rietveld-like approach.
 
