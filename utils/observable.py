@@ -200,3 +200,88 @@ class ObservableSettings:
             print(f"[3] notify: поле изменилось → '{full_path}'")
             on_change(full_path)
 
+
+
+# ========= 🥇 Mixin =============
+
+class ReactiveMixin:
+    """
+    Mixin, реализующий реактивную обработку настроек.
+
+    Требует от класса:
+    - self._effects : dict[path -> tuple[action]]
+    - self._actions : dict[action_name -> callable]
+
+    Используется в Phase, Atom и других объектах,
+    которые реагируют на изменения settings.
+    """
+    SETTINGS_CLS = None   # переопределяется в Phase / Atom
+
+    def _on_settings_changed(self, path: str):
+        print(f"[4] {self.__class__.__name__} получил уведомление: изменилось '{path}'")
+        actions = self._effects.get(path, ())
+        if not actions:
+            print("[5] → нет действий для этого поля")
+            return
+        for action_name in actions:
+            print(f"[6] → запускаем действие: {action_name}")
+            self._actions[action_name]()
+
+    def _trigger_all_effects(self):
+        """
+        Полная синхронизация Phase после загрузки settings.
+
+        Принцип:
+        - Проходим по карте _effects
+        - Для каждого action вызываем соответствующий метод Phase
+
+        ВАЖНО:
+        - Это batch-синхронизация (не реактивный одиночный триггер)
+        - Выполняется ОДИН раз после загрузки settings
+        - Гарантирует, что все производные структуры (profile, reflections, scales)
+          пересчитаны на согласованных данных
+
+        Почему нет лишних пересчётов:
+        - settings уже полностью загружены до вызова
+        - bind уже установлен
+        - поэтому все зависимости актуальны на момент запуска
+
+        Гарантия:
+        - итоговое состояние Phase консистентно
+        - нет промежуточных пересчётов “на полпути загрузки”
+        """       
+        print(f"[TRIGGER] синхронизация ({self.__class__.__name__})")
+        for path in self._effects:
+            print(f"[TRIGGER] → {path} зависит от {self._effects[path]}")
+            self._on_settings_changed(path)
+
+    def load_settings(self, data):
+        """
+        Загрузка settings из сохранённого состояния и полная синхронизация Phase.
+
+        Порядок выполнения:
+
+        1. from_legacy_dict(data)
+          → создаётся новый PhaseSettings со всеми значениями
+
+        2. bind(self._on_settings_changed)
+          → подключается реактивная система:
+            изменения settings теперь вызывают _on_settings_changed
+
+        3. _trigger_all_effects()
+          → выполняется ПОЛНАЯ синхронизация состояния Phase
+            на основе уже загруженных settings
+
+        ВАЖНО:
+        - На этом этапе все settings уже полностью присвоены
+        - Поэтому пересчёты происходят один раз и на актуальных данных
+        - Нет “промежуточных” пересчётов во время загрузки
+        - Это гарантирует согласованное состояние объекта после load_settings()
+
+        """        
+        if self.SETTINGS_CLS is None:
+            raise NotImplementedError("SETTINGS_CLS is not set")
+
+        self.settings = self.SETTINGS_CLS.from_legacy_dict(data)
+        self.settings.bind(self._on_settings_changed)
+        self._trigger_all_effects()
