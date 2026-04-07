@@ -1,86 +1,143 @@
 ## Reactive Settings System
 
-Система превращает обычные dict-настройки в реактивное дерево состояния.
+Система реализует реактивную модель настроек:
 
-Любое изменение значения:
-- автоматически оборачивается в реактивный контейнер (list/dict)
-- распространяется по дереву через path
-- вызывает callback изменения
-- может запускать пересчёт зависимых эффектов
-
-
-## Layers (Архитектурные слои)
-
-1. Settings layer
-   - dataclass-структуры
-   - хранение состояния
-
-2. Reactive layer (ObservableSettings)
-   - перехват __setattr__
-   - wrap list/dict
-   - bind вложенных объектов
-   - генерация path
-
-3. Effects layer (внутри класса Phase / Atom / ProfilePoints)
-   - _effects map
-   - пересчёт зависимостей
-   - batch-trigger после загрузки
+любое изменение значения автоматически:
+- фиксируется,
+- преобразуется (list/dict → reactive),
+- передаётся как событие (path),
+- обрабатывается через таблицу зависимостей.
 
 
-## Lifecycle of a setting change (Жизненный цикл значения)
+---
 
-1. User assigns value:
-   settings.form = "Gaussian"
+## Architecture
 
-2. __setattr__ is triggered
+Система состоит из трёх уровней:
 
-3. Value is wrapped:
-   list → ObservableList
-   dict → ObservableDict
+### 1. Settings (данные)
+- dataclass-объекты
+- только хранение состояния
+- без логики
 
-4. Value is stored in object
+### 2. Observable layer (реактивность)
+- `ObservableSettings`
+- перехват `__setattr__`
+- обёртка list/dict → ObservableList/ObservableDict
+- генерация `path` (например: `"blackman.mode"`)
+- вызов callback при изменении
 
-5. Callback is triggered:
-   on_change("form") or "blackman.mode"
-
-6. If needed:
-   effects system triggers recomputation
-
-
-## Initialization rule (Правило инициализации)
-
-При загрузке settings:
-
-1. создаётся объект settings
-2. выполняется bind()
-3. выполняется _trigger_all_effects()
-
-Важно:
-- все значения уже установлены до trigger
-- нет промежуточных recalculation
-- система переходит сразу в консистентное состояние
+### 3. Effects layer (логика объекта)
+- `_effects`: `path → actions`
+- `_actions`: `name → method`
+- обработка через `ReactiveMixin`
 
 
-## Migration strategy (Как встраивать в старые классы)
+---
 
-Старые классы могут работать в двух режимах:
+## Update pipeline
 
-### 1. Legacy mode
-- обычные dataclass settings
-- без реактивности
+Любое изменение проходит цепочку:
+```python
+settings.field = value
+↓
+setattr
+↓
+wrap (если list/dict)
+↓
+save value
+↓
+notify(path)
+↓
+ReactiveMixin._on_settings_changed
+↓
+lookup in _effects
+↓
+execute actions
+```
 
-### 2. Reactive mode
-- settings = ObservableSettings
-- bind(callback)
-- __setattr__ перехватывает изменения
-
-Переход:
-- можно заменить settings поэтапно
-- логика классов не требует переписывания сразу
 
 
-## Known constraints (Ограничения системы)
+---
 
-- __setattr__ становится центральной точкой логики
-- порядок bind → trigger важен
-- циклические зависимости в _effects не обрабатываются автоматически
+## Initialization (важно)
+
+Правильная последовательность:
+
+1. создать settings (из dataclass или from_legacy_dict)
+2. выполнить `bind(callback)`
+3. вызвать `_trigger_all_effects()`
+
+Гарантии:
+- все значения уже установлены
+- пересчёт выполняется один раз
+- нет промежуточных состояний
+
+
+---
+
+## Effects model
+
+Используется декларативная схема:
+
+```python
+_effects = {
+    "form": ("rebuild_profile",),
+    "typeref": ("rebuild_reflections",),
+}
+```
+
+- зависимости задаются как: `path → actions`
+- actions независимы друг от друга
+- порядок выполнения не гарантируется
+
+
+---
+
+### ReactiveMixin
+
+Общий механизм для всех объектов (Phase, Atom и др.):
+
+- `_on_settings_changed(path)`
+- `_trigger_all_effects()`
+- `_load_settings(...)`
+
+Позволяет:
+
+- избежать дублирования кода
+- обеспечить единое поведение реактивности
+
+
+---
+
+### Migration guide
+
+Чтобы сделать класс реактивным:
+
+1. создать `Settings` (dataclass + ObservableSettings)
+2. описать `_actions`
+3. описать `_effects`
+4. унаследоваться от `ReactiveMixin`
+
+Инициализация:
+
+```python
+self.settings = Settings().bind(self._on_settings_changed)
+```
+
+Загрузка:
+```python
+self._load_settings(
+      Settings.from_legacy_dict(data),
+      self._on_settings_changed
+      )
+```
+
+---
+
+### Constraints
+
+- логика зависит от `__setattr__`
+- критичен порядок: `bind → trigger`
+- `_effects` не поддерживает сложные графы зависимостей
+- отсутствует управление порядком выполнения actions
