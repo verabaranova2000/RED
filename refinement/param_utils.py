@@ -63,11 +63,15 @@ def prepare_params(project_object=None, phase_object=None, profile=True, backgro
       set_of_Phases = [phase_object]
     
     # --- 1. Цикл по фазам из набора
-    for Phasei in set_of_Phases:                       
-      typeref          = Phasei.setting['typeref']
-      corrections      = Phasei.setting['corrections']
-      calibrate        = Phasei.setting['calibrate']
-      calibration_mode = Phasei.setting['calibration mode']
+    for Phasei in set_of_Phases:         
+      typeref          = Phasei.settings.typeref
+      corrections      = Phasei.settings.corrections
+      calibrate        = Phasei.settings.calibrate
+      calibration_mode = Phasei.settings.calibration_mode                    
+      #typeref          = Phasei.setting['typeref']
+      #corrections      = Phasei.setting['corrections']
+      #calibrate        = Phasei.setting['calibrate']
+      #calibration_mode = Phasei.setting['calibration mode']
 
       # --- a-c. Объединение словарей с парметрами в один словарь ---
       # --- a. (Rietveld) ---
@@ -97,7 +101,8 @@ def prepare_params(project_object=None, phase_object=None, profile=True, backgro
       if   calibration_mode and (calibrate=='all'): 
         dict_all_pars=dict(list(dict_all_pars.items()) + list(Phasei.param_delta.items()))
       elif calibration_mode and (calibrate!=[]):
-        delta_for_ref = [f"{Phasei.prefix}delta_{hkl_to_str(hkl)}" for hkl in Phasei.setting['calibrate']]
+        delta_for_ref = [f"{Phasei.prefix}delta_{hkl_to_str(hkl)}" for hkl in Phasei.settins.calibrate]
+        #delta_for_ref = [f"{Phasei.prefix}delta_{hkl_to_str(hkl)}" for hkl in Phasei.setting['calibrate']]
         dict_all_pars.update({k: Phasei.param_delta[k] for k in delta_for_ref if k in Phasei.param_delta})
 
     # --- 2. Создание объекта типа Parameters ---
@@ -234,9 +239,12 @@ def resolve_refonly(refonly, pars_new, project_object, out, segment=None):
                     if name not in pars_new:
                         pars_new.add(phase.param_intensity[name])
                     resolved.add(name)
-                    if phase.setting['typeref'] != 'le Beil':
-                        if [h,k,l] not in phase.setting['corrections']:
-                            phase.setting['corrections'].append([h,k,l])
+                    if phase.settings.typeref != 'le Beil':
+                        if [h,k,l] not in phase.settings.corrections:
+                            phase.settings.corrections.append([h,k,l])                    
+                    #if phase.setting['typeref'] != 'le Beil':
+                    #    if [h,k,l] not in phase.setting['corrections']:
+                    #        phase.setting['corrections'].append([h,k,l])
        
         # ---- все дельты фазы внутри сегмента ----
         elif kind == "_delta_inside":
@@ -249,8 +257,10 @@ def resolve_refonly(refonly, pars_new, project_object, out, segment=None):
                     if name not in pars_new:
                         pars_new.add(phase.param_delta[name])
                     resolved.add(name)
-                    if [h,k,l] not in phase.setting['calibrate']:
-                        phase.setting['calibrate'].append([h,k,l])
+                    if [h,k,l] not in phase.settings.calibrate:
+                        phase.settings.calibrate.append([h,k,l])                    
+                    #if [h,k,l] not in phase.setting['calibrate']:
+                    #    phase.setting['calibrate'].append([h,k,l])
 
         # --- параметры формы пиков фазы ---
         elif kind == "_profile":
@@ -371,9 +381,12 @@ def params_for_next(project_object,     #: Project,
     # --- 3. Обновляем набор параметров I_hkl ---
     for KPhase in range(1, project_object.NPhases+1):             # пробегаемся по фазам в проекте
       Phasei      = project_object.__dict__.get('Phase'+str(KPhase))
-      corrections = Phasei.setting['corrections']
+      corrections = Phasei.settings.corrections
       if len(corrections)!=0:
-        for h,k,l in Phasei.setting['corrections']:
+        for h,k,l in Phasei.settings.corrections:
+      #corrections = Phasei.setting['corrections']
+      #if len(corrections)!=0:
+      #  for h,k,l in Phasei.setting['corrections']:
           I_name=f"{Phasei.prefix}I_{hkl_to_str([int(h), int(k), int(l)])}"
           if I_name not in pars_new: 
             pars_new.add(Phasei.param_intensity[I_name])
