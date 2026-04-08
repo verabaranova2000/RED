@@ -191,6 +191,7 @@ class ObservableSettings:
             object.__setattr__(self, name, value)
             return
 
+        print('📌Вызов self._coerce_value(name, value) в ObservableSettings')
         value = self._coerce_value(name, value)       # 0. базовый класс вызывает один метод, а наследник подменяет только то, что ему нужно.
         value = self._wrap_value(name, value)         # 1. превращаем list/dict в Observable
         object.__setattr__(self, name, value)         # 2. сохраняем
