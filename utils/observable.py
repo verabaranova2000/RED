@@ -1,5 +1,6 @@
 
 from typing import Callable, Optional
+from contextlib import contextmanager
 
 
 """
@@ -100,6 +101,22 @@ class ObservableSettings:
     _on_change: Optional[Callable[[str], None]] = None
     _path: str = ""
 
+    def _ensure_suspend_flag(self):
+        """ Ленивая инициализация (вместро def __init__) """
+        if "_suspend_notify" not in self.__dict__:
+            object.__setattr__(self, "_suspend_notify", 0)
+
+    @contextmanager
+    def suspend_notify(self):
+        """ Приостановить уведомление для присваивания сразу нескольких полей (patch) """
+        self._ensure_suspend_flag()
+        self._suspend_notify += 1
+        try:
+            yield
+        finally:
+            self._suspend_notify -= 1
+
+
     def bind(self, on_change: Callable[[str], None], path: str = ""):
         """
         Привязывает объект настроек к обработчику изменений.
@@ -140,7 +157,29 @@ class ObservableSettings:
         return self
 
     def _coerce_value(self, name, value):
-        print(f"[COERCE in ObservableSettings] value → {value}")
+        """
+        Нормализует значение перед сохранением атрибута.
+
+        Параметры
+        ----------
+        name : str
+            Имя изменяемого поля. Позволяет применять разные правила
+            нормализации для разных атрибутов в одном методе.
+        value : Any
+            Присваиваемое значение.
+
+        Возвращает
+        ----------
+        Any
+            Преобразованное (валидированное) значение.
+
+        Назначение
+        ----------
+        Является расширяемым hook-методом: базовый класс не содержит логики,
+        а наследники переопределяют его для валидации и ограничения значений
+        конкретных полей.
+        """        
+        #print(f"[COERCE from ObservableSettings] value → {value}")
         return value    
     
     def _wrap_value(self, name, value):
@@ -187,11 +226,15 @@ class ObservableSettings:
         """    
         print(f"[2] __setattr__: пытаемся установить {name} = {value}")
 
+        if getattr(self, "_suspend_notify", 0) > 0:
+            object.__setattr__(self, name, value)
+            return
+
         if name.startswith("_"):
             object.__setattr__(self, name, value)
             return
 
-        print('📌Вызов self._coerce_value(name, value) в ObservableSettings')
+        # print('📌Вызов self._coerce_value(name, value) в ObservableSettings')
         value = self._coerce_value(name, value)       # 0. базовый класс вызывает один метод, а наследник подменяет только то, что ему нужно.
         value = self._wrap_value(name, value)         # 1. превращаем list/dict в Observable
         object.__setattr__(self, name, value)         # 2. сохраняем
