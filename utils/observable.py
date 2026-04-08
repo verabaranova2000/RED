@@ -139,7 +139,10 @@ class ObservableSettings:
                 value._path = full_path        
         return self
 
-
+    def _coerce_value(self, name, value):
+        print(f"[COERCE in ObservableSettings] value → {value}")
+        return value    
+    
     def _wrap_value(self, name, value):
         """
         Преобразует присваиваемое значение в реактивный тип при необходимости.
@@ -188,6 +191,7 @@ class ObservableSettings:
             object.__setattr__(self, name, value)
             return
 
+        value = self._coerce_value(name, value)       # 0. базовый класс вызывает один метод, а наследник подменяет только то, что ему нужно.
         value = self._wrap_value(name, value)         # 1. превращаем list/dict в Observable
         object.__setattr__(self, name, value)         # 2. сохраняем
 
