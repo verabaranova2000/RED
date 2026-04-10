@@ -1,36 +1,36 @@
+# utils/paths.py
+
 from pathlib import Path
 
-""" Возвращают путь к файлу, если файл существует. """
+BASE_DIR: Path | None = None
 
-# ------ Константы модуля -------
-def find_project_root(start=Path.cwd()):
-    """ Ищет корень проекта по pyproject.toml """
-    for p in [start] + list(start.parents):
-        if (p / "pyproject.toml").exists():
-            return p
-    return start
 
-BASE_DIR = find_project_root()
+def set_base_dir(path: Path):
+    global BASE_DIR
+    BASE_DIR = path.resolve()
 
-SCATTERING_DATA_DIR = BASE_DIR / "atoms/scattering_factors/data"
-EXAMPLES_DIR = BASE_DIR / "examples"
 
-# ------ Путь к файлу с кривой рассеяния -------
+def _base() -> Path:
+    if BASE_DIR is None:
+        raise RuntimeError("BASE_DIR не задан. Вызови set_base_dir().")
+    return BASE_DIR
+
+
 def get_scattering_path(atom_name):
-    path = SCATTERING_DATA_DIR / f"{atom_name}.txt"
+    path = _base() / "atoms/scattering_factors/data" / f"{atom_name}.txt"
     return path if path.exists() else None
 
-## ------ Путь к файлу с bragg_positions -------
+
 def get_bragg_path(project_name, phase_name):
-    path = EXAMPLES_DIR / project_name / f"{phase_name}_bragg_positions.txt"
+    path = _base() / "examples" / project_name / f"{phase_name}_bragg_positions.txt"
     return path if path.exists() else None
 
-## ------ Путь к файлу cif -------
+
 def get_cif_path(project_name, phase_name):
-    path = EXAMPLES_DIR / project_name / f"{phase_name}.cif"
+    path = _base() / "examples" / project_name / f"{phase_name}.cif"
     return path if path.exists() else None
 
-## ------ Путь к файлу с экспериментальным профилем -------
+
 def get_profile_path(project_name):
-    path = EXAMPLES_DIR / project_name / "Profile1.txt"
+    path = _base() / "examples" / project_name / "Profile1.txt"
     return path if path.exists() else None
