@@ -257,23 +257,23 @@ class ObservableSettings:
                 d[legacy_name] = value
         return d
 
-    #classmethod
-    #def from_legacy_dict(cls, d):
-    #    obj = cls()
-    #    reverse = {v: k for k, v in cls.LEGACY_MAPPING.items()}
-    #    for legacy_name, value in d.items():
-    #        if legacy_name in reverse:
-    #            setattr(obj, reverse[legacy_name], value)
-    #    return obj
     @classmethod
     def from_legacy_dict(cls, d):
         obj = cls()
-        with obj.suspend_notify():
-            reverse = {v: k for k, v in cls.LEGACY_MAPPING.items()}
-            for legacy_name, value in d.items():
-                if legacy_name in reverse:
-                    setattr(obj, reverse[legacy_name], value)
-        return obj    
+        reverse = {v: k for k, v in cls.LEGACY_MAPPING.items()}
+        for legacy_name, value in d.items():
+            if legacy_name in reverse:
+                setattr(obj, reverse[legacy_name], value)
+        return obj
+    #classmethod
+    #def from_legacy_dict(cls, d):
+    #    obj = cls()
+    #    with obj.suspend_notify():
+    #        reverse = {v: k for k, v in cls.LEGACY_MAPPING.items()}
+    #        for legacy_name, value in d.items():
+    #            if legacy_name in reverse:
+    #                setattr(obj, reverse[legacy_name], value)
+    #    return obj    
 
 
 
