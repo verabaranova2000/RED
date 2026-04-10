@@ -1,7 +1,7 @@
 
 from typing import Callable, Optional
 from contextlib import contextmanager
-
+from typing import ClassVar
 
 """
 Наблюдаемые настройки и реактивные контейнеры.
@@ -100,6 +100,7 @@ class ObservableSettings:
     """    
     _on_change: Optional[Callable[[str], None]] = None
     _path: str = ""
+    LEGACY_MAPPING: ClassVar[dict] = {}
 
     def _ensure_suspend_flag(self):
         """ Ленивая инициализация (вместро def __init__) """
@@ -247,6 +248,23 @@ class ObservableSettings:
             full_path = f"{self._path}.{name}" if self._path else name
             print(f"[3] notify: поле изменилось → '{full_path}'")
             on_change(full_path)
+
+    def to_legacy_dict(self):
+        d = {}
+        for attr, legacy_name in self.LEGACY_MAPPING.items():
+            value = getattr(self, attr)
+            if value is not None:
+                d[legacy_name] = value
+        return d
+
+    @classmethod
+    def from_legacy_dict(cls, d):
+        obj = cls()
+        reverse = {v: k for k, v in cls.LEGACY_MAPPING.items()}
+        for legacy_name, value in d.items():
+            if legacy_name in reverse:
+                setattr(obj, reverse[legacy_name], value)
+        return obj
 
 
 
