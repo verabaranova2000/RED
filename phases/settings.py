@@ -161,17 +161,17 @@ class PhaseSettings(ObservableSettings):
     uvar: tuple = ("scale", "form", "I_h_k_l")
     internal: InternalSettings = field(default_factory=InternalSettings)
 
-    def to_legacy_dict(self):     
-        return {"typeref": self.typeref,
-            "corrections": list(self.corrections),
-            "calibration mode": self.calibration_mode,
-            "calibrate": list(self.calibrate),
-            "Blackman": self.blackman.to_legacy_dict(),
-            "form": self.form,
-            "uvar": list(self.uvar),
-            "internal": self.internal.to_legacy_dict()}
+    #def to_legacy_dict(self):     
+    #    return {"typeref": self.typeref,
+    #        "corrections": list(self.corrections),
+    #        "calibration mode": self.calibration_mode,
+    #        "calibrate": list(self.calibrate),
+    #        "Blackman": self.blackman.to_legacy_dict(),
+    #        "form": self.form,
+    #        "uvar": list(self.uvar),
+    #        "internal": self.internal.to_legacy_dict()}
 
-    classmethod
+    @classmethod
     def from_legacy_dict(cls, d):
         """
         Создаёт объект PhaseSettings из словаря старого формата.
