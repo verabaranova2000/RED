@@ -250,17 +250,6 @@ class ObservableSettings:
             print(f"[3] notify: поле изменилось → '{full_path}'")
             on_change(full_path)
 
-    #def to_legacy_dict(self):
-    #    """
-    #    Преобразует настройки в словарь старого формата (для сохранения в файл).
-    #    """          
-    #    d = {}
-    #    for attr, legacy_name in self.LEGACY_MAPPING.items():
-    #        value = getattr(self, attr)
-    #        if value is not None:
-    #            d[legacy_name] = value
-    #    return d
-
     def to_legacy_dict(self):
         """
         Преобразует настройки фазы в словарь старого формата.
@@ -271,26 +260,44 @@ class ObservableSettings:
         ----------
         dict
             Словарь, полностью совместимый с прежним форматом setting.
-        """          
-        def convert(value):                        # ✔ делает поведение единообразным
-            if hasattr(value, "to_legacy_dict"):   # ✔ фиксит главную проблему — вложенные dataclass
-                return value.to_legacy_dict()
-            if isinstance(value, tuple):           # ✔ фиксит uvar и подобные
-                return list(value)
-            if isinstance(value, np.ndarray):
-                return value.tolist()
-            if isinstance(value, list):
-                return [convert(v) for v in value]
-            if isinstance(value, dict):
-                return {k: convert(v) for k, v in value.items()}
-            return value
-
+        """            
         d = {}
         for attr, legacy_name in self.LEGACY_MAPPING.items():
             value = getattr(self, attr)
             if value is not None:
-                d[legacy_name] = convert(value)
+                d[legacy_name] = value
         return d
+
+    #def to_legacy_dict(self):
+    #    """
+    #    Преобразует настройки фазы в словарь старого формата.
+
+    #    Используется для сохранения проекта без изменения структуры файла.
+
+    #    Возвращает
+    #    ----------
+    #    dict
+    #        Словарь, полностью совместимый с прежним форматом setting.
+    #    """          
+    #    def convert(value):                        # ✔ делает поведение единообразным
+    #        if hasattr(value, "to_legacy_dict"):   # ✔ фиксит главную проблему — вложенные dataclass
+    #            return value.to_legacy_dict()
+    #        if isinstance(value, tuple):           # ✔ фиксит uvar и подобные
+    #            return list(value)
+    #        if isinstance(value, np.ndarray):
+    #            return value.tolist()
+    #        if isinstance(value, list):
+    #            return [convert(v) for v in value]
+    #        if isinstance(value, dict):
+    #            return {k: convert(v) for k, v in value.items()}
+    #        return value
+
+    #    d = {}
+    #    for attr, legacy_name in self.LEGACY_MAPPING.items():
+    #        value = getattr(self, attr)
+    #        if value is not None:
+    #            d[legacy_name] = convert(value)
+    #    return d
 
     #classmethod
     #def from_legacy_dict(cls, d):
