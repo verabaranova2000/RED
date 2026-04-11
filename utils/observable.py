@@ -250,23 +250,6 @@ class ObservableSettings:
             print(f"[3] notify: поле изменилось → '{full_path}'")
             on_change(full_path)
 
-    #def to_legacy_dict(self):
-    #    """
-    #    Преобразует настройки фазы в словарь старого формата.
-
-    #    Используется для сохранения проекта без изменения структуры файла.
-
-    #    Возвращает
-    #    ----------
-    #    dict
-    #        Словарь, полностью совместимый с прежним форматом setting.
-    #    """            
-    #    d = {}
-    #    for attr, legacy_name in self.LEGACY_MAPPING.items():
-    #        value = getattr(self, attr)
-    #        if value is not None:
-    #            d[legacy_name] = value
-    #    return d
 
     def to_legacy_dict(self):
         """
@@ -299,14 +282,6 @@ class ObservableSettings:
                 d[legacy_name] = convert(value)
         return d
 
-    #classmethod
-    #def from_legacy_dict(cls, d):
-    #    obj = cls()
-    #    reverse = {v: k for k, v in cls.LEGACY_MAPPING.items()}
-    #    for legacy_name, value in d.items():
-    #        if legacy_name in reverse:
-    #            setattr(obj, reverse[legacy_name], value)
-    #    return obj
     
     @classmethod     
     def from_legacy_dict(cls, d):        
