@@ -257,24 +257,37 @@ class ObservableSettings:
                 d[legacy_name] = value
         return d
 
-    @classmethod
-    def from_legacy_dict(cls, d):
-        obj = cls()
-        reverse = {v: k for k, v in cls.LEGACY_MAPPING.items()}
-        for legacy_name, value in d.items():
-            if legacy_name in reverse:
-                setattr(obj, reverse[legacy_name], value)
-        return obj
     #classmethod
     #def from_legacy_dict(cls, d):
     #    obj = cls()
-    #    with obj.suspend_notify():
-    #        reverse = {v: k for k, v in cls.LEGACY_MAPPING.items()}
-    #        for legacy_name, value in d.items():
-    #            if legacy_name in reverse:
-    #                setattr(obj, reverse[legacy_name], value)
-    #    return obj    
+    #    reverse = {v: k for k, v in cls.LEGACY_MAPPING.items()}
+    #    for legacy_name, value in d.items():
+    #        if legacy_name in reverse:
+    #            setattr(obj, reverse[legacy_name], value)
+    #    return obj
+    @classmethod
+    def from_legacy_dict(cls, d):
+        obj = cls()
+        with obj.suspend_notify():
+            reverse = {v: k for k, v in cls.LEGACY_MAPPING.items()}
+            for legacy_name, value in d.items():
+                if legacy_name in reverse:
+                    setattr(obj, reverse[legacy_name], value)
+        return obj    
 
+
+    def snapshot(self):
+        """Возвращает снимок состояния (dict) с рекурсивным преобразованием вложенных dataclass."""
+        def convert(obj):
+            if hasattr(obj, "__dataclass_fields__"):
+                return {k: convert(getattr(obj, k)) for k in obj.__dataclass_fields__}
+            if isinstance(obj, (list, tuple)):
+                return [convert(x) for x in obj]
+            if isinstance(obj, dict):
+                return {k: convert(v) for k, v in obj.items()}
+            return obj
+
+        return convert(self)
 
 
 # ========= 🥇 Mixin =============
