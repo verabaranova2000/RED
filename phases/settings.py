@@ -28,34 +28,36 @@ class BlackmanSettings(ObservableSettings):
         - если список → только к указанным рефлексам;
         - если пусто → ни к одному (даже при mode=True).
     """
+    LEGACY_MAPPING = {"mode": "mode",
+                      "corrections": "corrections",}    
     mode: bool = False
     corrections: list = field(default_factory=list)
     
-    def to_legacy_dict(self):
-        """
-        Преобразует настройки в словарь старого формата (для сохранения в файл).
-        """        
-        return {"mode": self.mode,
-                "corrections": list(self.corrections)}
+    #def to_legacy_dict(self):
+    #    """
+    #    Преобразует настройки в словарь старого формата (для сохранения в файл).
+    #    """        
+    #    return {"mode": self.mode,
+    #            "corrections": list(self.corrections)}
 
-    @classmethod
-    def from_legacy_dict(cls, d):
-        """
-        Создаёт объект из словаря старого формата.
+    #classmethod
+    #def from_legacy_dict(cls, d):
+    #    """
+    #    Создаёт объект из словаря старого формата.
 
-        Параметры
-        ----------
-        d : dict
-            Словарь вида {"mode": ..., "corrections": ...}
+    #    Параметры
+    #    ----------
+    #    d : dict
+    #        Словарь вида {"mode": ..., "corrections": ...}
 
-        Возвращает
-        ----------
-        BlackmanSettings
-        """        
-        obj = cls()
-        obj.mode = d.get("mode", False)
-        obj.corrections = d.get("corrections", [])
-        return obj
+    #    Возвращает
+    #    ----------
+    #    BlackmanSettings
+    #    """        
+    #    obj = cls()
+    #    obj.mode = d.get("mode", False)
+    #    obj.corrections = d.get("corrections", [])
+    #    return obj
 
 
 
@@ -73,31 +75,32 @@ class InternalSettings(ObservableSettings):
             I_hkl = internal_scale * I_param
 
         Не влияет на расчёт в режиме 'Rietveld'.
-    """    
+    """  
+    LEGACY_MAPPING = {"internal_scale": "internal scale",}      
     internal_scale: float = 1.0\
 
-    def to_legacy_dict(self):
-        """
-        Преобразует настройки в словарь старого формата (для сохранения в файл).
-        """            
-        return {"internal scale": self.internal_scale}
+    #def to_legacy_dict(self):
+    #    """
+    #    Преобразует настройки в словарь старого формата (для сохранения в файл).
+    #    """            
+    #    return {"internal scale": self.internal_scale}
 
-    @classmethod
-    def from_legacy_dict(cls, d):
-        """
-        Создаёт объект из словаря старого формата.
+    #classmethod
+    #def from_legacy_dict(cls, d):
+    #    """
+    #    Создаёт объект из словаря старого формата.
 
-        Параметры
-        ----------
-        d : dict
+    #    Параметры
+    #    ----------
+    #    d : dict
 
-        Возвращает
-        ----------
-        InternalSettings
-        """        
-        obj = cls()
-        obj.internal_scale = d.get("internal scale", 1.0)
-        return obj
+    #    Возвращает
+    #    ----------
+    #    InternalSettings
+    #    """        
+    #    obj = cls()
+    #    obj.internal_scale = d.get("internal scale", 1.0)
+    #    return obj
 
 
 
@@ -141,6 +144,14 @@ class PhaseSettings(ObservableSettings):
     internal : InternalSettings
         Внутренние параметры масштабирования интенсивностей.
     """    
+    LEGACY_MAPPING = {"typeref": "typeref",
+                      "corrections": "corrections",
+                      "calibration_mode": "calibration mode",
+                      "calibrate": "calibrate",
+                      "blackman": "Blackman",
+                      "form": "form",
+                      "uvar": "uvar",
+                      "internal": "internal",}    
     typeref: Literal["Rietveld", "le Beil"] = "Rietveld"
     corrections: list = field(default_factory=list)
     calibration_mode: bool = False
@@ -150,17 +161,7 @@ class PhaseSettings(ObservableSettings):
     uvar: tuple = ("scale", "form", "I_h_k_l")
     internal: InternalSettings = field(default_factory=InternalSettings)
 
-    def to_legacy_dict(self):
-        """
-        Преобразует настройки фазы в словарь старого формата.
-
-        Используется для сохранения проекта без изменения структуры файла.
-
-        Возвращает
-        ----------
-        dict
-            Словарь, полностью совместимый с прежним форматом setting.
-        """        
+    def to_legacy_dict(self):     
         return {"typeref": self.typeref,
             "corrections": list(self.corrections),
             "calibration mode": self.calibration_mode,
@@ -170,7 +171,7 @@ class PhaseSettings(ObservableSettings):
             "uvar": list(self.uvar),
             "internal": self.internal.to_legacy_dict()}
 
-    @classmethod
+    classmethod
     def from_legacy_dict(cls, d):
         """
         Создаёт объект PhaseSettings из словаря старого формата.

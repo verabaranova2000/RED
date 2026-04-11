@@ -2,6 +2,7 @@
 from typing import Callable, Optional
 from contextlib import contextmanager
 from typing import ClassVar
+import numpy as np
 
 """
 Наблюдаемые настройки и реактивные контейнеры.
@@ -249,12 +250,46 @@ class ObservableSettings:
             print(f"[3] notify: поле изменилось → '{full_path}'")
             on_change(full_path)
 
+    #def to_legacy_dict(self):
+    #    """
+    #    Преобразует настройки в словарь старого формата (для сохранения в файл).
+    #    """          
+    #    d = {}
+    #    for attr, legacy_name in self.LEGACY_MAPPING.items():
+    #        value = getattr(self, attr)
+    #        if value is not None:
+    #            d[legacy_name] = value
+    #    return d
+
     def to_legacy_dict(self):
+        """
+        Преобразует настройки фазы в словарь старого формата.
+
+        Используется для сохранения проекта без изменения структуры файла.
+
+        Возвращает
+        ----------
+        dict
+            Словарь, полностью совместимый с прежним форматом setting.
+        """          
+        def convert(value):                        # ✔ делает поведение единообразным
+            if hasattr(value, "to_legacy_dict"):   # ✔ фиксит главную проблему — вложенные dataclass
+                return value.to_legacy_dict()
+            if isinstance(value, tuple):           # ✔ фиксит uvar и подобные
+                return list(value)
+            if isinstance(value, np.ndarray):
+                return value.tolist()
+            if isinstance(value, list):
+                return [convert(v) for v in value]
+            if isinstance(value, dict):
+                return {k: convert(v) for k, v in value.items()}
+            return value
+
         d = {}
         for attr, legacy_name in self.LEGACY_MAPPING.items():
             value = getattr(self, attr)
             if value is not None:
-                d[legacy_name] = value
+                d[legacy_name] = convert(value)
         return d
 
     #classmethod
@@ -265,8 +300,26 @@ class ObservableSettings:
     #        if legacy_name in reverse:
     #            setattr(obj, reverse[legacy_name], value)
     #    return obj
-    @classmethod
-    def from_legacy_dict(cls, d):
+    @classmethod     
+    def from_legacy_dict(cls, d):        
+        """
+        Создаёт объект из словаря старого формата.
+
+        Параметры
+        ----------
+        d : dict
+            Словарь настроек, считанный из файла проекта, 
+            вида {"mode": ..., "corrections": ...}
+
+        Возвращает
+        ----------
+        [Phase / Atom / ProfilePoints / Background / ... ]Settings
+
+        Примечания
+        ----------
+        - Отсутствующие поля заполняются значениями по умолчанию.
+        - Вложенные настройки (Blackman, internal) создаются рекурсивно.        
+        """            
         obj = cls()
         with obj.suspend_notify():
             reverse = {v: k for k, v in cls.LEGACY_MAPPING.items()}
@@ -277,7 +330,24 @@ class ObservableSettings:
 
 
     def snapshot(self):
-        """Возвращает снимок состояния (dict) с рекурсивным преобразованием вложенных dataclass."""
+        """
+        Возвращает снимок состояния (dict) с рекурсивным преобразованием вложенных dataclass.
+        
+        Example
+        ------
+        {
+            "finder_groups": {
+                "window_length": 20,
+                "polyorder": 3,
+                "prominence": 5,
+            },
+            "segment": [],
+            "background": {
+                ...
+            },
+            ...
+        }
+        """
         def convert(obj):
             if hasattr(obj, "__dataclass_fields__"):
                 return {k: convert(getattr(obj, k)) for k in obj.__dataclass_fields__}
