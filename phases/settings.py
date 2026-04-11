@@ -171,32 +171,15 @@ class PhaseSettings(ObservableSettings):
     #        "uvar": list(self.uvar),
     #        "internal": self.internal.to_legacy_dict()}
 
-    @classmethod
-    def from_legacy_dict(cls, d):
-        """
-        Создаёт объект PhaseSettings из словаря старого формата.
-
-        Параметры
-        ----------
-        d : dict
-            Словарь настроек, считанный из файла проекта.
-
-        Возвращает
-        ----------
-        PhaseSettings
-
-        Примечания
-        ----------
-        - Отсутствующие поля заполняются значениями по умолчанию.
-        - Вложенные настройки (Blackman, internal) создаются рекурсивно.
-        """        
-        obj = cls()
-        obj.typeref = d.get("typeref", "Rietveld")
-        obj.corrections = d.get("corrections", [])
-        obj.calibration_mode = d.get("calibration mode", False)
-        obj.calibrate = d.get("calibrate", [])
-        obj.blackman = BlackmanSettings.from_legacy_dict(d.get("Blackman", {}))
-        obj.form = d.get("form", "Lorentzian")
-        obj.uvar = tuple(d.get("uvar", ("scale", "form", "I_h_k_l")))
-        obj.internal = InternalSettings.from_legacy_dict(d.get("internal", {}))
-        return obj
+    #classmethod
+    #def from_legacy_dict(cls, d):  
+    #    obj = cls()
+    #    obj.typeref = d.get("typeref", "Rietveld")
+    #    obj.corrections = d.get("corrections", [])
+    #    obj.calibration_mode = d.get("calibration mode", False)
+    #    obj.calibrate = d.get("calibrate", [])
+    #    obj.blackman = BlackmanSettings.from_legacy_dict(d.get("Blackman", {}))
+    #    obj.form = d.get("form", "Lorentzian")
+    #    obj.uvar = tuple(d.get("uvar", ("scale", "form", "I_h_k_l")))
+    #    obj.internal = InternalSettings.from_legacy_dict(d.get("internal", {}))
+    #    return obj
