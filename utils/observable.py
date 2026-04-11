@@ -3,6 +3,7 @@ from typing import Callable, Optional
 from contextlib import contextmanager
 from typing import ClassVar
 import numpy as np
+from utils.tracing import TRACE
 
 """
 Наблюдаемые настройки и реактивные контейнеры.
@@ -358,15 +359,35 @@ class ReactiveMixin:
     """
     SETTINGS_CLS = None   # переопределяется в Phase / Atom
 
+    #def _on_settings_changed(self, path: str):
+    #    print(f"[4] {self.__class__.__name__} получил уведомление: изменилось '{path}'")
+    #    actions = self._effects.get(path, ())
+    #    if not actions:
+    #        print("[5] → нет действий для этого поля")
+    #        return
+    #    for action_name in actions:
+    #        print(f"[6] → запускаем действие: {action_name}")
+    #        self._actions[action_name]()
+
     def _on_settings_changed(self, path: str):
-        print(f"[4] {self.__class__.__name__} получил уведомление: изменилось '{path}'")
+        is_root = not TRACE.active
+        if is_root:
+            TRACE.start(path)
+
+        TRACE.log(f"[notify] {path}")
+
         actions = self._effects.get(path, ())
         if not actions:
-            print("[5] → нет действий для этого поля")
-            return
-        for action_name in actions:
-            print(f"[6] → запускаем действие: {action_name}")
-            self._actions[action_name]()
+            TRACE.log("no actions")
+        else:
+            for action_name in actions:
+                TRACE.enter(action_name)
+                self._actions[action_name]()
+                TRACE.exit()
+
+        if is_root:
+            TRACE.end()
+
 
     def _trigger_all_effects(self):
         """
