@@ -307,6 +307,7 @@ class ObservableSettings:
     #        if legacy_name in reverse:
     #            setattr(obj, reverse[legacy_name], value)
     #    return obj
+    
     @classmethod     
     def from_legacy_dict(cls, d):        
         """
