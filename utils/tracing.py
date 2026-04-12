@@ -1,31 +1,35 @@
-class TraceCollector:
+# utils/tracing.py
+
+class TraceSession:
     def __init__(self):
-        self.current = None
+        self.active = False
+        self.events = []
+        self.bind_items = []
+        self.title = None
+        self.level = 0
 
-    def start_bind(self, source, target):
-        self.current = {
-            "type": "bind",
-            "source": source,
-            "target": target,
-            "paths": []
-        }
+    def start_bind(self, title: str):
+        self.active = True
+        self.title = title
+        self.bind_items = []
 
-    def add_path(self, path):
-        if self.current and self.current["type"] == "bind":
-            self.current["paths"].append(path or "root")
+    def add_bind_item(self, path: str):
+        if not self.active:
+            return
+        self.bind_items.append(path or "root")
 
-    def end(self):
-        if not self.current:
+    def end_bind(self):
+        if not self.active:
             return
 
-        self._print_bind(self.current)
-        self.current = None
+        print(f"\n🔗 {self.title}")
+        for item in self.bind_items:
+            print(f"  • {item}")
+        print()
 
-    def _print_bind(self, data):
-        print(f"\n🔗 {data['source']} → {data['target']}")
-        for p in data["paths"]:
-            print(f"  • {p}")
+        self.active = False
+        self.bind_items = []
+        self.title = None
 
 
-
-TRACE = TraceCollector()  # один экземпляр на всё приложение
+TRACE = TraceSession()  # один экземпляр на всё приложение

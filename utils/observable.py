@@ -160,17 +160,19 @@ class ObservableSettings:
         return self
 
 
-    def bind(self, on_change: Callable[[str], None], path: str = ""):
+    def bind(self, on_change, path: str = "", owner_label: str = None, trace: TraceSession = None):
+        """
+        Привязывает объект настроек к обработчику изменений.
+        """
 
-        # 👉 стартуем только для корня
-        is_root = path == ""
+        is_root_bind = (path == "")
 
-        if is_root:
-            target_name = on_change.__self__.__class__.__name__  # Phase / ProfilePoints
-            source_name = self.__class__.__name__
-            TRACE.start_bind(source_name, target_name)
+        if trace is not None and is_root_bind:
+            label = owner_label or self.__class__.__name__
+            trace.start_bind(f"{label}.settings")
 
-        TRACE.add_path(path)
+        if trace is not None:
+            trace.add_bind_item(path if path else "root")
 
         object.__setattr__(self, "_on_change", on_change)
         object.__setattr__(self, "_path", path)
@@ -180,19 +182,16 @@ class ObservableSettings:
             full_path = f"{path}.{name}" if path else name
 
             if isinstance(value, ObservableSettings):
-                value.bind(on_change, full_path)
-
+                value.bind(on_change, full_path, owner_label=owner_label, trace=trace)
             elif isinstance(value, ObservableList):
                 value._notify = on_change
                 value._path = full_path
-
             elif isinstance(value, ObservableDict):
                 value._notify = on_change
                 value._path = full_path
 
-        # 👉 заканчиваем только в корне
-        if is_root:
-            TRACE.end()
+        if trace is not None and is_root_bind:
+            trace.end_bind()
 
         return self
 
