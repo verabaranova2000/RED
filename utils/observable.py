@@ -196,16 +196,19 @@ class ObservableSettings:
         return self
 
 
-    def bind(self, on_change: Callable[[str], None], path: str = ""):
+    def bind(self, on_change: Callable[[str], None], path: str = "", trace=None):
         object.__setattr__(self, "_on_change", on_change)
         object.__setattr__(self, "_path", path)
+
+        if trace is not None:
+            trace.add_bind_item(path or "root")
 
         for name in getattr(self, "__dataclass_fields__", {}):
             value = getattr(self, name)
             full_path = f"{path}.{name}" if path else name
 
             if isinstance(value, ObservableSettings):
-                value.bind(on_change, full_path)
+                value.bind(on_change, full_path, trace=trace)
 
             elif isinstance(value, ObservableList):
                 value._notify = on_change
@@ -214,6 +217,7 @@ class ObservableSettings:
             elif isinstance(value, ObservableDict):
                 value._notify = on_change
                 value._path = full_path
+
         return self
 
 

@@ -1,4 +1,5 @@
 # utils/tracing.py
+from contextlib import contextmanager
 
 class TraceSession_v0:
     def __init__(self):
@@ -32,36 +33,37 @@ class TraceSession_v0:
         self.title = None
 
 
-def render_bind(title, items):
-    print(f"[bind] {title} - подключение")
-
-    for i, item in enumerate(items):
-        prefix = "└─" if i == len(items) - 1 else "├─"
-        print(f"  {prefix} {item}")
 
 
 class TraceSession:
     def __init__(self):
+        self.stack = []
         self.active = False
-        self.title = None
-        self.bind_items = []
 
+    @contextmanager
     def bind_context(self, title: str):
-        return self._BindContext(self, title)
+        block = {"title": title, "items": []}
+        self.stack.append(block)
+        self.active = True
+        try:
+            yield self
+        finally:
+            self.stack.pop()
+            self._render_block(block)
+            self.active = bool(self.stack)
 
-    class _BindContext:
-        def __init__(self, trace, title):
-            self.trace = trace
-            self.title = title
+    def add_bind_item(self, path: str):
+        if not self.active:
+            return
+        self.stack[-1]["items"].append(path)
 
-        def __enter__(self):
-            self.trace.active = True
-            self.trace.title = self.title
-            self.trace.bind_items = []
-            return self.trace
+    def _render_block(self, block):
+        print(f"[bind] {block['title']} - подключение")
 
-        def __exit__(self, exc_type, exc, tb):
-            self.trace.active = False
-            render_bind(self.title, self.trace.bind_items)
+        items = block["items"]
+        for i, item in enumerate(items):
+            prefix = "└─" if i == len(items) - 1 else "├─"
+            print(f"  {prefix} {item}")
+
 
 TRACE = TraceSession()  # один экземпляр на всё приложение
