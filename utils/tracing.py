@@ -32,48 +32,36 @@ class TraceSession_v0:
         self.title = None
 
 
+def render_bind(title, items):
+    print(f"[bind] {title} - подключение")
+
+    for i, item in enumerate(items):
+        prefix = "└─" if i == len(items) - 1 else "├─"
+        print(f"  {prefix} {item}")
+
 
 class TraceSession:
     def __init__(self):
         self.active = False
         self.title = None
-        self.root = None
         self.bind_items = []
 
-    def start_bind(self, title: str, root: str):
-        self.active = True
-        self.title = title
-        self.root = root
-        self.bind_items = []
+    def bind_context(self, title: str):
+        return self._BindContext(self, title)
 
-    def add_bind_item(self, path: str):
-        if not self.active:
-            return
-        self.bind_items.append(path or "root")
+    class _BindContext:
+        def __init__(self, trace, title):
+            self.trace = trace
+            self.title = title
 
-    def end_bind(self):
-        if not self.active:
-            return
+        def __enter__(self):
+            self.trace.active = True
+            self.trace.title = self.title
+            self.trace.bind_items = []
+            return self.trace
 
-        self._print_bind()
-
-        self.active = False
-        self.title = None
-        self.root = None
-        self.bind_items = []
-
-    def _print_bind(self):
-        print(f"[bind] {self.title} - подключение")
-
-        # root первым
-        items = ["root"] + [i for i in self.bind_items if i != ""]
-
-        for i, item in enumerate(items):
-            if i == 0:
-                print(f"  ├─ {item}")
-            elif i == len(items) - 1:
-                print(f"  └─ {item}")
-            else:
-                print(f"  ├─ {item}")
+        def __exit__(self, exc_type, exc, tb):
+            self.trace.active = False
+            render_bind(self.title, self.trace.bind_items)
 
 TRACE = TraceSession()  # один экземпляр на всё приложение

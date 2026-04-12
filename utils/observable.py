@@ -160,7 +160,7 @@ class ObservableSettings:
         return self
 
 
-    def bind(self, on_change, path: str = "", owner_label: str = None, trace: TraceSession = None):
+    def bind_v1(self, on_change, path: str = "", owner_label: str = None, trace: TraceSession = None):
         """
         Привязывает объект настроек к обработчику изменений.
         """
@@ -194,6 +194,28 @@ class ObservableSettings:
             trace.end_bind()
 
         return self
+
+
+    def bind(self, on_change: Callable[[str], None], path: str = ""):
+        object.__setattr__(self, "_on_change", on_change)
+        object.__setattr__(self, "_path", path)
+
+        for name in getattr(self, "__dataclass_fields__", {}):
+            value = getattr(self, name)
+            full_path = f"{path}.{name}" if path else name
+
+            if isinstance(value, ObservableSettings):
+                value.bind(on_change, full_path)
+
+            elif isinstance(value, ObservableList):
+                value._notify = on_change
+                value._path = full_path
+
+            elif isinstance(value, ObservableDict):
+                value._notify = on_change
+                value._path = full_path
+        return self
+
 
     def _coerce_value(self, name, value):
         """
