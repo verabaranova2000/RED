@@ -3,7 +3,7 @@ from typing import Callable, Optional
 from contextlib import contextmanager
 from typing import ClassVar
 import numpy as np
-from utils.tracing import TRACE
+from utils.tracing import TraceSession
 
 """
 Наблюдаемые настройки и реактивные контейнеры.
