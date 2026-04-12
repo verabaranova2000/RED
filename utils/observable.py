@@ -344,13 +344,14 @@ class ObservableSettings:
         value = self._wrap_value(name, value)         # 1. превращаем list/dict в Observable
         object.__setattr__(self, name, value)         # 2. сохраняем
 
+        full_path = f"{self._path}.{name}" if self._path else name
+        TRACE.emit("setattr", f"{full_path} = {value!r}")
         on_change = getattr(self, "_on_change", None) # 3. биндим вложенные settings
         if on_change is not None:
             if isinstance(value, ObservableSettings):
                 value.bind(on_change, f"{self._path}.{name}" if self._path else name)
             # 4. уведомляем Phase
-            full_path = f"{self._path}.{name}" if self._path else name
-            TRACE.emit("setattr", f"{full_path} = {value!r}")
+            TRACE.emit("notify", full_path)
             on_change(full_path)
 
 
