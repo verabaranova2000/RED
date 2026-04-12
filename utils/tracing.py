@@ -1,43 +1,31 @@
-class TraceSession:
+class TraceCollector:
     def __init__(self):
-        self.active = False
-        self.events = []
-        self.level = 0
+        self.current = None
 
-    def start(self, root):
-        if self.active:
-            return
-        self.active = True
-        self.events = []
-        self.level = 0
-        self.log(f"START: {root}")
+    def start_bind(self, source, target):
+        self.current = {
+            "type": "bind",
+            "source": source,
+            "target": target,
+            "paths": []
+        }
+
+    def add_path(self, path):
+        if self.current and self.current["type"] == "bind":
+            self.current["paths"].append(path or "root")
 
     def end(self):
-        if not self.active:
+        if not self.current:
             return
-        self.log("END")
-        self.print()
-        self.active = False
 
-    def log(self, msg):
-        if not self.active:
-            return
-        indent = "  " * self.level
-        self.events.append(f"{indent}{msg}")
+        self._print_bind(self.current)
+        self.current = None
 
-    def enter(self, name):
-        self.log(f"→ {name}")
-        self.level += 1
-
-    def exit(self):
-        self.level = max(0, self.level - 1)
-
-    def print(self):
-        print("\n🧩 TRACE SESSION:")
-        for e in self.events:
-            print(e)
-        print()
+    def _print_bind(self, data):
+        print(f"\n🔗 {data['source']} → {data['target']}")
+        for p in data["paths"]:
+            print(f"  • {p}")
 
 
 
-TRACE = TraceSession()  # один экземпляр на всё приложение
+TRACE = TraceCollector()  # один экземпляр на всё приложение

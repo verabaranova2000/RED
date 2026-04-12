@@ -120,7 +120,7 @@ class ObservableSettings:
             self._suspend_notify -= 1
 
 
-    def bind(self, on_change: Callable[[str], None], path: str = ""):
+    def bind_v0(self, on_change: Callable[[str], None], path: str = ""):
         """
         Привязывает объект настроек к обработчику изменений.
 
@@ -157,6 +157,43 @@ class ObservableSettings:
             elif isinstance(value, ObservableDict):
                 value._notify = on_change
                 value._path = full_path        
+        return self
+
+
+    def bind(self, on_change: Callable[[str], None], path: str = ""):
+
+        # 👉 стартуем только для корня
+        is_root = path == ""
+
+        if is_root:
+            target_name = on_change.__self__.__class__.__name__  # Phase / ProfilePoints
+            source_name = self.__class__.__name__
+            TRACE.start_bind(source_name, target_name)
+
+        TRACE.add_path(path)
+
+        object.__setattr__(self, "_on_change", on_change)
+        object.__setattr__(self, "_path", path)
+
+        for name in getattr(self, "__dataclass_fields__", {}):
+            value = getattr(self, name)
+            full_path = f"{path}.{name}" if path else name
+
+            if isinstance(value, ObservableSettings):
+                value.bind(on_change, full_path)
+
+            elif isinstance(value, ObservableList):
+                value._notify = on_change
+                value._path = full_path
+
+            elif isinstance(value, ObservableDict):
+                value._notify = on_change
+                value._path = full_path
+
+        # 👉 заканчиваем только в корне
+        if is_root:
+            TRACE.end()
+
         return self
 
     def _coerce_value(self, name, value):
