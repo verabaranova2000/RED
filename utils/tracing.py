@@ -36,7 +36,7 @@ class TraceSession_v0:
 
 
 
-class TraceSession:
+class TraceSession_bad:
     def __init__(self):
         self.stack = []
         self.active = False
@@ -66,5 +66,50 @@ class TraceSession:
             prefix = "└─" if i == len(items) - 1 else "├─"
             print(f"  {prefix} {item}")
 
+
+
+class TraceSession:
+    """
+    Один трассировщик с “выключателем”
+
+    В функциональных методах вообще не рисовать и не печатать, 
+    а только при необходимости эмитить события в пустой по умолчанию приёмник. 
+    А включать это всё — только через with ....
+
+        - без with — обычная работа, без шума;
+        - с with — сбор событий;
+        - рендер — только в конце сессии;
+        - bind, __setattr__, update_* не знают ничего про красивый вывод.
+    """
+    def __init__(self):
+        self.enabled = False
+        self.blocks = []
+        self._current = None
+
+    @contextmanager
+    def session(self, title: str):
+        prev = self.enabled
+        self.enabled = True
+        block = {"title": title, "events": []}
+        self.blocks.append(block)
+        self._current = block
+        try:
+            yield self
+        finally:
+            self._render(block)
+            self.blocks.pop()
+            self._current = self.blocks[-1] if self.blocks else None
+            self.enabled = prev
+
+    def emit(self, kind: str, text: str):
+        if not self.enabled or self._current is None:
+            return
+        self._current["events"].append((kind, text))
+
+    def _render(self, block):
+        print(f"[{block['title']}]")
+        for kind, text in block["events"]:
+            print(f"  {kind}: {text}")
+        print()
 
 TRACE = TraceSession()  # один экземпляр на всё приложение
