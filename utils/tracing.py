@@ -2,6 +2,7 @@
 from contextlib import contextmanager
 
 class TraceSession_v0:
+    """" Работал с bind_v1 """
     def __init__(self):
         self.active = False
         self.events = []
