@@ -68,7 +68,7 @@ class TraceSession_bad:
 
 
 
-class TraceSession:
+class TraceSession_v1:
     """
     Один трассировщик с “выключателем”
 
@@ -105,6 +105,35 @@ class TraceSession:
         if not self.enabled or self._current is None:
             return
         self._current["events"].append((kind, text))
+
+    def _render(self, block):
+        print(f"[{block['title']}]")
+        for kind, text in block["events"]:
+            print(f"  {kind}: {text}")
+        #print()
+
+
+
+# екущая версия уже почти подходит, но её лучше сделать 
+# контекстной и стековой, чтобы она умела вложенные блоки
+class TraceSession:
+    def __init__(self):
+        self.stack = []
+
+    @contextmanager
+    def session(self, title: str):
+        block = {"title": title, "events": []}
+        self.stack.append(block)
+        try:
+            yield self
+        finally:
+            finished = self.stack.pop()
+            self._render(finished)
+
+    def emit(self, kind: str, text: str):
+        if not self.stack:
+            return
+        self.stack[-1]["events"].append((kind, text))
 
     def _render(self, block):
         print(f"[{block['title']}]")

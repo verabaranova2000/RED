@@ -265,8 +265,7 @@ class ObservableSettings:
             return ObservableDict(value, self._on_change, path)
         return value
 
-
-    def __setattr__(self, name, value):
+    def setattr_norm(self, name, value):
         """
         Перехватывает присваивание атрибутов и реализует реактивное обновление.
 
@@ -308,6 +307,50 @@ class ObservableSettings:
             # 4. уведомляем Phase
             full_path = f"{self._path}.{name}" if self._path else name
             print(f"[3] notify: поле изменилось → '{full_path}'")
+            on_change(full_path)
+
+
+    def __setattr__(self, name, value):
+        """
+        Перехватывает присваивание атрибутов и реализует реактивное обновление.
+
+        Логика:
+
+        1. Приватные поля ("_...") устанавливаются напрямую без уведомлений.
+        2. Значение преобразуется через _wrap_value (list/dict → reactive wrappers).
+        3. Значение сохраняется в объект.
+        4. Если установлен callback (_on_change), выполняется:
+        - рекурсивная привязка вложенных ObservableSettings
+        - уведомление об изменении через полный путь поля
+
+        Формат уведомления:
+            "blackman.mode", "form", "a.b.c"
+
+        Гарантия:
+        - callback вызывается только после фактического сохранения значения
+        - вложенные структуры автоматически становятся наблюдаемыми
+        """    
+        #print(f"[2] __setattr__: пытаемся установить {name} = {value}")
+
+        if getattr(self, "_suspend_notify", 0) > 0:
+            object.__setattr__(self, name, value)
+            return
+
+        if name.startswith("_"):
+            object.__setattr__(self, name, value)
+            return
+
+        value = self._coerce_value(name, value)       # 0. базовый класс вызывает один метод, а наследник подменяет только то, что ему нужно.
+        value = self._wrap_value(name, value)         # 1. превращаем list/dict в Observable
+        object.__setattr__(self, name, value)         # 2. сохраняем
+
+        on_change = getattr(self, "_on_change", None) # 3. биндим вложенные settings
+        if on_change is not None:
+            if isinstance(value, ObservableSettings):
+                value.bind(on_change, f"{self._path}.{name}" if self._path else name)
+            # 4. уведомляем Phase
+            full_path = f"{self._path}.{name}" if self._path else name
+            TRACE.emit("setattr", f"{full_path} = {value!r}")
             on_change(full_path)
 
 
