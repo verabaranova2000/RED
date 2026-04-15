@@ -9,4 +9,9 @@ def profile_R_factor(y_obs, y_calc):
 
 
 def profile_R_factor_from_diff(diff, y_obs):
+    """" 
+    Удобно вызвать:
+    ------
+    >>> Rp = profile_R_factor_from_diff(diff=out.residual, y_obs=pr.Profile_points.I_obs_calibr) 
+    """
     return float(np.sum(np.abs(diff)) / np.sum(np.abs(y_obs)) * 100)
