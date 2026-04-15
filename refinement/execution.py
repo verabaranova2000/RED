@@ -1,5 +1,5 @@
 
-from .metrics import profile_R_factor
+from .metrics import profile_R_factor_from_diff
 from .session import RefinementSession
 from .param_utils import params_for_next, val_delta_percent
 from .schema.models import StepModel
@@ -75,9 +75,10 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
                        step_path=step_path)
     # --- основной fit ---
     out = pr.model.fit(y[s_idx:e_idx+1], axes=two_theta[s_idx:e_idx+1], params=my_pars)
-    pr.params = out.params
-    Rp = profile_R_factor(y_obs=pr.Profile_points.I_obs_calibr,
-                          y_calc=pr.Profile_points.I_calc)
+    Rp = profile_R_factor_from_diff(diff=out.residual, y_obs=pr.Profile_points.I_obs_calibr)
+    #pr.params = out.params
+    #Rp = profile_R_factor(y_obs=pr.Profile_points.I_obs_calibr,
+    #                      y_calc=pr.Profile_points.I_calc)
     session.report_Rp(Rp)
 
     param_data = {}
