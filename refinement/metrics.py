@@ -1,3 +1,5 @@
+import numpy as np
+
 # ==== Профильный R-фактор ====
 def profile_R_factor(y_obs, y_calc):
   a1=float(sum(abs(y_obs-y_calc)))
