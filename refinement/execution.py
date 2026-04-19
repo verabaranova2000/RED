@@ -64,7 +64,7 @@ def execute_step(step: StepModel, pr, out_prev, session: RefinementSession, dept
 
 
     # --- resolve segment ---
-    y = pr.Profile_points.I_obs
+    y = pr.Profile_points.I_obs_calibr
     two_theta = pr.Profile_points.two_theta
     s_idx, e_idx, s_val, e_val = resolve_segment(step, two_theta)
 
