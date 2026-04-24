@@ -46,7 +46,7 @@ def phase_to_snapshot(phase):
 def project_to_snapshot(project):
     return {
         "phases": {
-            phase.prefix: phase_to_snapshot(phase)
+            phase.name: phase_to_snapshot(phase)
             for phase in project.phases
         },        
         "profile": profilepoints_to_snapshot(project.Profile_points)
