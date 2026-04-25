@@ -1,9 +1,10 @@
 import numpy as np
-import math, cmath
+import math 
+import cmath
 import scipy.special as sc
 from uncertainties import ufloat, unumpy
-
-
+import jax.numpy as jnp
+from jax.scipy import special as jsp
 
 ## ======== Функции формы пиков ========
 """"" 1. GaussianModel """""                                                    # Работает
@@ -13,9 +14,18 @@ def f_Gaussian(axes,A,μ,σ,uvar=False):
   f=A*A1/(σ*(2*math.pi)**0.5)
   return f
 
+def f_Gaussian_jax(x,A,μ,σ):
+  A1=jnp.exp(-(x-μ)**2/(2*σ**2))
+  f=A*A1/(σ*jnp.sqrt(2*math.pi))
+  return f
+
 """"" 2. LorentzianModel """""                                                  # Работает
 def f_Lorentzian(axes,A,μ,σ,uvar=False):                              # σ - полуширина. Полная ширина=2σ
   x=axes
+  f=A/math.pi*(σ/((x-μ)**2+σ**2))
+  return f
+
+def f_Lorentzian_jax(x,A,μ,σ):                              # σ - полуширина. Полная ширина=2σ
   f=A/math.pi*(σ/((x-μ)**2+σ**2))
   return f
 
@@ -26,6 +36,13 @@ def f_SplitLorentzian(axes,A,μ,σ,σr,uvar=False):                             
   a2=σr**2/((x-μ)**2+σr**2)*np.heaviside(x-μ, 0.5)
   f=2*A/(math.pi*(σ+σr))*(a1+a2)
   return f
+
+def f_SplitLorentzian_jax(axes, A, μ, σ, σr, uvar=False):
+    x = axes
+    a1 = σ**2 / ((x - μ)**2 + σ**2) * jnp.heaviside(μ - x, 0.5)
+    a2 = σr**2 / ((x - μ)**2 + σr**2) * jnp.heaviside(x - μ, 0.5)
+    f  = 2 * A / (jnp.pi * (σ + σr)) * (a1 + a2)
+    return f
 
 """"" 4. VoigtModel """""
 def f_Voigt(axes,A,μ,σ,γ,uvar=False):                                           # Преобразовать в float!!!
@@ -44,11 +61,22 @@ def f_PseudoVoigt(axes,A,μ,σ,η, uvar=False):
   f=(1-η)*A*A1/(σg*(2*math.pi)**0.5) + η*A*A2/math.pi
   return f
 
+def f_PseudoVoigt_jax(x,A,μ,σ,η):
+  σg      = σ/jnp.sqrt(2*jnp.log(2))                                    # the full width at half maximum of each component
+  gauss   = jnp.exp(-(x-μ)**2/(2*σg**2))
+  lorentz = σ/((x-μ)**2+σ**2)
+  f=(1-η)*A*gauss/(σg*jnp.sqrt(2*math.pi)) + η*A*lorentz/math.pi
+  return f
+
 """"" 6. MoffatModel """""                                                      # Работает
 def f_Moffat(axes,A,μ,σ,βm,uvar=False):
   x=axes
   f=A*(((x-μ)/σ)**2+1)**(-βm)
   return f
+
+def f_Moffat_jax(x, A, μ, σ, βm, uvar=False):
+    f = A * (((x - μ) / σ)**2 + 1)**(-βm)
+    return f 
 
 """"" 7. Pearson4Model """""
 def f_Pearson4(axes,A,μ,σ,m,v, uvar=False):
@@ -59,12 +87,25 @@ def f_Pearson4(axes,A,μ,σ,m,v, uvar=False):
   f=A*ΓΓ/(σ*sc.beta(m-1/2,1/2))*A2*A3
   return f
 
+def f_Pearson4_jax(x, A, μ, σ, m, v, uvar=False):
+    z = m + 1j * v / 2
+    gamma_ratio = jnp.abs(jsp.gamma(z) / jsp.gamma(m))**2
+    A2 = (1 + (x - μ)**2 / σ**2)**(-m)
+    A3 = jnp.exp(-v * jnp.arctan((x - μ) / σ))
+    f = A * gamma_ratio / (σ * jsp.beta(m - 0.5, 0.5)) * A2 * A3
+    return f  
+
 """"" 8. Pearson7Model """""
 def f_Pearson7(axes,A,μ,σ,m,uvar=False):                                        # Преобразовать в float!!!
   x=axes
   A2=(1+(x-μ)**2/σ**2)**(-m)
   f=A/(σ*sc.beta(m-1/2,1/2))*A2
   return f
+
+def f_Pearson7_jax(x, A, μ, σ, m, uvar=False):
+    A2 = (1 + (x - μ)**2 / σ**2)**(-m)
+    f = A / (σ * jsp.beta(m - 0.5, 0.5)) * A2
+    return f   
 
 """"" 9. StudentsTModel """""
 def f_StudentsT(axes,A,μ,σ,uvar=False):                                         # Преобразовать в float!!!
@@ -74,6 +115,12 @@ def f_StudentsT(axes,A,μ,σ,uvar=False):                                       
   f=A/(σ*math.pi)*Γ*A2
   return f
 
+def f_StudentsT_jax(x, A, μ, σ, uvar=False):
+    Γ = jsp.gamma((σ + 1) / 2) / jsp.gamma(σ / 2)
+    A2 = (1 + (x - μ)**2 / σ)**(-(σ + 1) / 2)
+    f = A / (σ * jnp.pi) * Γ * A2
+    return f  
+
 """"" 10. BreitWignerModel """""                                                # Работает
 def f_BreitWigner(axes,A,μ,σ,q,uvar=False):
   x=axes
@@ -81,12 +128,23 @@ def f_BreitWigner(axes,A,μ,σ,q,uvar=False):
   f=A*(q*σ/2+x-μ)**2/A2
   return f
 
+def f_BreitWigner_jax(x, A, μ, σ, q, uvar=False):
+    A2 = (σ / 2)**2 + (x - μ)**2
+    f = A * (q * σ / 2 + x - μ)**2 / A2
+    return f  
+
 """"" 11. LognormalModel """""                                                  # Работает
 def f_Lognormal(axes,A,μ,σ,uvar=False):
   x=axes
   A2=np.exp(-(np.log(x)-μ)**2/(2*σ**2))/x   if uvar==False else unumpy.exp(-(unumpy.log(x)-μ)**2/(2*σ**2))/x
   f=A*A2/(σ*(2*math.pi)**0.5)
   return f
+
+def f_Lognormal_jax(x, A, μ, σ, uvar=False):
+    x_safe = jnp.where(x > 0, x, 1e-12)
+    A2 = jnp.exp(-(jnp.log(x_safe) - μ)**2 / (2 * σ**2)) / x_safe
+    f = A * A2 / (σ * jnp.sqrt(2 * jnp.pi))
+    return f
 
 """"" 12. DampedOscillatorModel """""                                           # Работает
 def f_DampedOscillator(axes,A,μ,σ,uvar=False):
@@ -96,6 +154,12 @@ def f_DampedOscillator(axes,A,μ,σ,uvar=False):
   f=A/(a1+a2)**0.5
   return f
 
+def f_DampedOscillator_jax(x, A, μ, σ, uvar=False):
+    a1 = (1 - (x / μ)**2)**2
+    a2 = (2 * σ * x / μ)**2
+    f = A / jnp.sqrt(a1 + a2)
+    return f 
+
 """"" 13. DampedHarmonicOscillatorModel """""                                    # Работает
 def f_DampedHarmonicOscillator(axes,A,μ,σ,γ,uvar=False):
   x=axes
@@ -103,6 +167,14 @@ def f_DampedHarmonicOscillator(axes,A,μ,σ,γ,uvar=False):
   a2=(x+μ)**2+σ**2
   f=A*σ/(math.pi*(1-np.exp(-x/γ)))*(1/a1-1/a2)  if uvar==False else A*σ/(math.pi*(1-unumpy.exp(-x/γ)))*(1/a1-1/a2)
   return f
+
+def f_DampedHarmonicOscillator_jax(x, A, μ, σ, γ, uvar=False):
+    a1 = (x - μ)**2 + σ**2
+    a2 = (x + μ)**2 + σ**2
+    denom = (1 - jnp.exp(-x / γ))
+    denom_safe = jnp.where(jnp.abs(denom) > 1e-12, denom, 1e-12)
+    f = A * σ / (jnp.pi * denom_safe) * (1 / a1 - 1 / a2)
+    return f 
 
 """"" 14. ExponentialGaussianModel """""                                        # Преобразовать в float!!!
 def f_ExponentialGaussian(axes,A,μ,σ,γ,uvar=False):
@@ -112,6 +184,12 @@ def f_ExponentialGaussian(axes,A,μ,σ,γ,uvar=False):
   f=A*γ/2*A1*A2
   return f
 
+def f_ExponentialGaussian_jax(x, A, μ, σ, γ, uvar=False):
+    A1 = jnp.exp(γ * (μ - x + γ * σ**2 / 2))
+    A2 = jsp.erfc((μ + γ * σ**2 - x) / (jnp.sqrt(2) * σ))
+    f  = A * γ / 2 * A1 * A2
+    return f
+
 """"" 15. SkewedGaussianModel """""                                             # Преобразовать в float!!!
 def f_SkewedGaussian(axes,A,μ,σ,γ,uvar=False):
   x=axes
@@ -119,6 +197,12 @@ def f_SkewedGaussian(axes,A,μ,σ,γ,uvar=False):
   A2=1+sc.erf(γ*(x-μ)/(σ*2**0.5))
   f=A*A1*A2/(σ*(2*math.pi)**0.5)
   return f
+
+def f_SkewedGaussian_jax(x, A, μ, σ, γ, uvar=False):
+    A1 = jnp.exp(-(x - μ)**2 / (2 * σ**2))
+    A2 = 1 + jsp.erf(γ * (x - μ) / (σ * jnp.sqrt(2)))
+    f  = A * A1 * A2 / (σ * jnp.sqrt(2 * jnp.pi))
+    return f
 
 """"" 16. SkewedVoigtModel """""                                                # Преобразовать в float!!!
 def f_SkewedVoigt(axes,A,μ,σ,γ,skew,uvar=False):
@@ -155,9 +239,27 @@ models_dict = {
         'ExponentialGaussian':      f_ExponentialGaussian,
         'SkewedGaussian':           f_SkewedGaussian,
         'SkewedVoigt':              f_SkewedVoigt}
+models_dict_jax = {
+        'Gaussian':                 f_Gaussian_jax,
+        'Lorentzian':               f_Lorentzian_jax,
+        'SplitLorentzian':          f_SplitLorentzian_jax,
+        'Voigt':                    f_Voigt,                # 🚨
+        'PseudoVoigt':              f_PseudoVoigt_jax,
+        'Moffat':                   f_Moffat_jax,
+        'Pearson4':                 f_Pearson4_jax,
+        'Pearson7':                 f_Pearson7_jax,
+        'StudentsT':                f_StudentsT_jax,
+        'BreitWigner':              f_BreitWigner_jax,
+        'Lognormal':                f_Lognormal_jax,
+        'DampedOscillator':         f_DampedOscillator_jax,
+        'DampedHarmonicOscillator': f_DampedHarmonicOscillator_jax,
+        'ExponentialGaussian':      f_ExponentialGaussian_jax,
+        'SkewedGaussian':           f_SkewedGaussian_jax,
+        'SkewedVoigt':              f_SkewedVoigt}          # 🚨
 
 # list of model:
 model_list = [k for k,v in models_dict.items()]
+model_list_jax = [k for k,v in models_dict_jax.items()]
 
 par_form_dict = {
         'Gaussian':                 [{'name': 'A',   'value': 1,    'min': float('-inf'),  'max': float('inf')  },
@@ -240,23 +342,49 @@ par_form_dict = {
 
 
 __all__ = [
-    'f_Gaussian',
-    'f_Lorentzian',
-    'f_SplitLorentzian',
+    'f_Gaussian',                 'f_Gaussian_jax',
+    'f_Lorentzian',               'f_Lorentzian_jax',
+    'f_SplitLorentzian',          'f_SplitLorentzian_jax',
     'f_Voigt',
-    'f_PseudoVoigt',
-    'f_Moffat',
-    'f_Pearson4',
-    'f_Pearson7',
-    'f_StudentsT',
-    'f_BreitWigner',
-    'f_Lognormal',
-    'f_DampedOscillator',
-    'f_DampedHarmonicOscillator',
-    'f_ExponentialGaussian',
-    'f_SkewedGaussian',
+    'f_PseudoVoigt',              'f_PseudoVoigt_jax',
+    'f_Moffat',                   'f_Moffat_jax',
+    'f_Pearson4',                 'f_Pearson4_jax',
+    'f_Pearson7',                 'f_Pearson7_jax',
+    'f_StudentsT',                'f_StudentsT_jax',
+    'f_BreitWigner',              'f_BreitWigner_jax',
+    'f_Lognormal',                'f_Lognormal_jax',
+    'f_DampedOscillator',         'f_DampedOscillator_jax',
+    'f_DampedHarmonicOscillator', 'f_DampedHarmonicOscillator_jax',
+    'f_ExponentialGaussian',      'f_ExponentialGaussian_jax',
+    'f_SkewedGaussian',           'f_SkewedGaussian_jax',
     'f_SkewedVoigt',
-    'model_list',
-    'par_form_dict',
-    'models_dict'
+    'model_list',                 'model_list_jax',
+    'models_dict',                'models_dict_jax',
+    'par_form_dict',    
 ]
+
+
+
+
+# ------ Сравнение jax и не-jax моделей -------
+# pr.Phase1.settings.form = 'PseudoVoigt'               # ✔
+# pr.Phase1.settings.form = 'SplitLorentzian'           # ✔ 
+# pr.Phase1.settings.form = 'Gaussian'                  # ✔
+# pr.Phase1.settings.form = 'Voigt'                     # 🚨боль
+# pr.Phase1.settings.form = 'Lorentzian'                # ✔
+# pr.Phase1.settings.form = 'Moffat'                    # ✔
+# pr.Phase1.settings.form = 'Pearson4'                  # ✔
+# pr.Phase1.settings.form = 'Pearson7'                  # ✔
+# pr.Phase1.settings.form = 'StudentsT'                 # ✔
+
+# pr.Phase1.settings.form = 'BreitWigner'               # ✔
+# pr.Phase1.settings.form = 'Lognormal'                 # ✔
+# pr.Phase1.settings.form = 'DampedOscillator'          # ✔
+# pr.Phase1.settings.form = 'DampedHarmonicOscillator'  # ✔
+
+# pr.Phase1.settings.form = 'ExponentialGaussian'       # ✔
+# pr.Phase1.settings.form = 'SkewedGaussian'            # ✔
+# pr.Phase1.settings.form = 'SkewedVoigt'               # 🚨боль
+
+
+# compare_profile(pr, pr.Phase1.prefix, n_runs=1)
