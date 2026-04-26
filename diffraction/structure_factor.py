@@ -7,10 +7,17 @@ from atoms.generate import get_all_positions_in_cell_for_atom
 
 
 # ---- F² (с atom_map) ----
-def F2_jax(hkl_array, x, y, z, occ, fe_el, t_at, t_overall, atom_map):
+def F2_hkl_jax(hkl_array, x, y, z, occ, fe_el, t_at, t_overall, atom_map):
     """
     Вычисляет интенсивности |F|² для набора отражений.
 
+    Низкоуровневая батчевая функция
+    ------
+    (F2 for a batch of reflections):
+        принимает hkl_array
+        принимает уже подготовленные массивы по атомам
+        возвращает F2 для всех отражений сразу
+    
     Формула:
         F(hkl) = sum_j [ f_j * T_j * occ_j * exp(2πi (h x_j + k y_j + l z_j)) ] * T_overall
         |F|² = |F(hkl)|^2
@@ -42,6 +49,15 @@ def F2_jax(hkl_array, x, y, z, occ, fe_el, t_at, t_overall, atom_map):
 
 # ---- Посчитать F² на jax для фазы (с atom_map) ----
 def F2_array_jax(phase_object,**params):
+    """
+    Обёртка верхнего уровня по фазе
+    ------
+    (phase -> batch data -> F2):    
+        берёт phase_object
+        сама собирает hkl_array
+        сама собирает атомные позиции, fe_el, t_at, t_overall
+        вызывает F2_hkl_jax
+    """
     prefix = phase_object.prefix
 
     # --- 1. Параметры ячейки ---
@@ -92,7 +108,7 @@ def F2_array_jax(phase_object,**params):
     t_at_all  = jnp.stack(t_at_list, axis=1)          # (M_stl, N_atoms)
 
     # --- 6. Структурные факторы ---
-    F2 = F2_jax(hkl_array,
+    F2 = F2_hkl_jax(hkl_array,
                 all_sites[:,0], all_sites[:,1], all_sites[:,2],
                 all_occ, fe_el_all, t_at_all, t_overall, atom_map)
 
@@ -152,7 +168,7 @@ def F2_array_jax_snap(phase_snap,**params):
     t_at_all  = jnp.stack(t_at_list, axis=1)          # (M_stl, N_atoms)
 
     # --- 6. Структурные факторы ---
-    F2 = F2_jax(hkl_array,
+    F2 = F2_hkl_jax(hkl_array,
                 all_sites[:,0], all_sites[:,1], all_sites[:,2],
                 all_occ, fe_el_all, t_at_all, t_overall, atom_map)
 

@@ -1,5 +1,6 @@
 from lmfit import Parameter
-import re, math
+import re
+import math
 from utils.cif_extract import get_value_for_atom
 ## ========= Набор параметров ===========
 
@@ -19,7 +20,7 @@ def create_par_positions(data, prefix_KPhase, atom_name, positions=None):       
       objects.get(object_name).value = float(get_value_for_atom(data,keyword,atom_name))
       objects.get(object_name)._vary = False
   # ---- Если заданы координаты вручную ----
-  elif data==None and positions is not None:
+  elif data is None and positions is not None:
     for key, val in zip(('x','y','z'), positions):
       object_name = f"{prefix_KPhase}{atom_name}_{key}"
       objects[object_name] = Parameter(object_name)
@@ -81,7 +82,7 @@ def create_par_kmodel(atom_info, prefix_KPhase, atom_name, ashperical=False, **p
         objects[object_name].max   = dict_P_max[re.sub("[^A-Za-z]", "", shell)]
       objects[object_name]._vary = False
   ## -----------------
-  if ashperical==True:
+  if ashperical is True:
     aspherical_shell=atom_info['parametrisations']['aspherical shell']
     full_prefix_shell=f"{prefix_KPhase}{atom_name}_{aspherical_shell}_"
     if re.sub("[^A-Za-z]", "", aspherical_shell)=='p':
