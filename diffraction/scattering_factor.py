@@ -5,7 +5,7 @@ from scipy.interpolate import interp1d
 from utils.format import get_value
 
 # ---- IT4322 fₑₗ ----
-def fe_matrix_jax(s, PARAM_A_at, PARAM_B_at):
+def f_el_matrix_jax(s, PARAM_A_at, PARAM_B_at):
     """
     Электронный фактор рассеяния для одного атома (JAX-версия).
 
@@ -16,12 +16,12 @@ def fe_matrix_jax(s, PARAM_A_at, PARAM_B_at):
     exp_term = jnp.exp(-PARAM_B_at[:, None] * s2[None, :])  # broadcasting: (5, M)
     fe = jnp.sum(PARAM_A_at[:, None] * exp_term, axis=0)    # (M,)
     return fe
-fe_matrix_jax_jit = jax.jit(fe_matrix_jax)
+f_el_matrix_jax_jit = jax.jit(f_el_matrix_jax)
 
 
 
 # ---- Каппа-модель fₑₗ ----
-def fe_el_kmodel_jax_preinterp(stl_arr, phase_prefix, atom_name, atom_Z, curves, **pars):
+def f_el_kmodel_jax_preinterp(stl_arr, phase_prefix, atom_name, atom_Z, curves, **pars):
     full_prefix = phase_prefix+atom_name+'_'
 
     # --- 1. precompute arrays (numpy) on stl_arr ---
@@ -60,7 +60,7 @@ def fe_el_kmodel_jax_preinterp(stl_arr, phase_prefix, atom_name, atom_Z, curves,
 
 
 # ---- Обертка для fₑₗ (выбор модели) ----
-def fe_el_jax_wrapper(stl, atom, phase_prefix, **pars):
+def f_el_jax_wrapper(stl, atom, phase_prefix, **pars):
     """
     Универсальная обёртка для вычисления fₑₗ атома.
 
@@ -72,11 +72,11 @@ def fe_el_jax_wrapper(stl, atom, phase_prefix, **pars):
     """
     model = atom.settings.fe_from
     if model == 'it4322':
-      return fe_matrix_jax_jit(stl, 
+      return f_el_matrix_jax_jit(stl, 
                                 atom.info['it4322']['A'], 
                                 atom.info['it4322']['B'])
     elif model == 'Mott-Bethe':
-      return fe_el_kmodel_jax_preinterp(stl, phase_prefix,
+      return f_el_kmodel_jax_preinterp(stl, phase_prefix,
                                          atom.name, 
                                          atom.Z, 
                                          atom.info['curves'],**pars)
@@ -86,9 +86,9 @@ def fe_el_jax_wrapper(stl, atom, phase_prefix, **pars):
 
 
 # ---- Обертка для fₑₗ (выбор модели) по снимку ----
-def fe_el_jax_wrapper_snap(stl, atom_snap, phase_prefix, **pars):
+def f_el_jax_wrapper_snap(stl, atom_snap, phase_prefix, **pars):
     """
-    Snapshot-версия функции fe_el_jax_wrapper.
+    Snapshot-версия функции f_el_jax_wrapper.
     Универсальная обёртка для вычисления f_e атома.
 
     stl     : jnp.ndarray, shape (M,)
@@ -99,11 +99,11 @@ def fe_el_jax_wrapper_snap(stl, atom_snap, phase_prefix, **pars):
     """
     model = atom_snap["fe_from"]
     if model == 'it4322':
-      return fe_matrix_jax_jit(stl,
+      return f_el_matrix_jax_jit(stl,
                                 atom_snap['it4322']['A'],
                                 atom_snap['it4322']['B'])
     elif model == 'Mott-Bethe':
-      return fe_el_kmodel_jax_preinterp(stl, phase_prefix,
+      return f_el_kmodel_jax_preinterp(stl, phase_prefix,
                                          atom_snap["name"],
                                          atom_snap["Z"],
                                          atom_snap["curves"],**pars)

@@ -2,7 +2,7 @@ import numpy as np
 import jax.numpy as jnp
 from utils.format import get_value
 from diffraction.geometry import stl_hkl_jax
-from diffraction.scattering_factor import fe_el_jax_wrapper, fe_el_jax_wrapper_snap
+from diffraction.scattering_factor import f_el_jax_wrapper, f_el_jax_wrapper_snap
 from atoms.generate import get_all_positions_in_cell_for_atom
 
 
@@ -86,7 +86,7 @@ def F2_array_jax(phase_object,**params):
         sites   = get_all_positions_in_cell_for_atom(xa, ya, za, phase_object.symmetry_operations)
 
         # атомный фактор рассеяния (универсальная обёртка)
-        fe_el = fe_el_jax_wrapper(stl_array, atom, prefix, **params)
+        fe_el = f_el_jax_wrapper(stl_array, atom, prefix, **params)
 
         # атомная температурная поправка
         t_at  = jnp.exp(-Biso_at * stl_sq)
@@ -146,7 +146,7 @@ def F2_array_jax_snap(phase_snap,**params):
         sites   = get_all_positions_in_cell_for_atom(xa, ya, za, phase_snap["symmetry_operations"])
 
         # атомный фактор рассеяния (универсальная обёртка)
-        fe_el = fe_el_jax_wrapper_snap(stl_array, atom_snap, prefix, **params)
+        fe_el = f_el_jax_wrapper_snap(stl_array, atom_snap, prefix, **params)
 
         # атомная температурная поправка
         t_at  = jnp.exp(-Biso_at * stl_sq)

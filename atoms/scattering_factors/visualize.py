@@ -102,23 +102,23 @@ def view_electron_form_factors(atom_name, prefix_KPhase, curves, experimental_st
   - Используется интерактивная визуализация Plotly с возможностью масштабирования и
     отображения экспериментальных точек.
   """
-  from atoms.models import fe, fe_el_kmodel
+  from atoms.models import fe, f_el_kmodel
   atom=re.sub("[^A-Za-z]", "", atom_name)
   title_of_fig='Atom "'+atom+'":  Relativistic electron scattering factors for neutral atom from IT and kappa-model'
   config = {'scrollZoom': True}
   fig=go.Figure()
   ## --- Кривая рассеяния электронов из IT 92 ---
-  curve_Gauss = np.array([fe(stl0, element_ID=atom) for stl0 in curves['neutral atom']['x']])
+  curve_Gauss = np.array([f_el(stl0, element_ID=atom) for stl0 in curves['neutral atom']['x']])
   tr_c4322=go.Scatter(x=curves['neutral atom']['x'], y=curve_Gauss, name='Neutral atom (IT)', line=dict(color='yellow'),xaxis="x", yaxis="y")
   fig.add_trace(tr_c4322)
   ## --- Кривые, вычисленные по каппа-модели ---
-  curve_kappa = np.array([fe_el_kmodel(stl0, prefix_KPhase, atom_name, curves, **pars) for stl0 in curves['neutral atom']['x'][1:]])
+  curve_kappa = np.array([f_el_kmodel(stl0, prefix_KPhase, atom_name, curves, **pars) for stl0 in curves['neutral atom']['x'][1:]])
   tr_kappa = go.Scatter(x=curves['neutral atom']['x'][1:], y=curve_kappa, name='kappa-model',  line=dict(color='#D626FF'),xaxis="x", yaxis="y")
   fig.add_trace(tr_kappa)
 
   ## --- Добавляем экспериментальные точки stl ---
   if experimental_stl!=None:
-    stl_y=[fe_el_kmodel(stl0, prefix_KPhase, atom_name, curves, **pars) for stl0 in experimental_stl]
+    stl_y=[f_el_kmodel(stl0, prefix_KPhase, atom_name, curves, **pars) for stl0 in experimental_stl]
     tr_hkl_points=go.Scatter(x=experimental_stl, y=stl_y,  name='observed reflections (h,k,l)', mode='markers',
                              line=dict(color='#D626FF'), marker=dict(size=4, symbol="diamond", line=dict(width=1, color="DarkSlateGrey")), xaxis="x", yaxis="y")
     fig.add_trace(tr_hkl_points)

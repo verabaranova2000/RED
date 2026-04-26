@@ -1,10 +1,12 @@
 import math
 import cmath
 import numpy as np
+import re
 from atoms.generate import get_all_positions_in_cell_for_atom
 from phases.models import models_dict, par_form_dict
 from phases.params import FORM, hkl_to_str
-
+from scipy.interpolate import interp1d
+from atoms.scattering_factors.parametric_factors import PARAM
 
 """
 LEGACY NUMPY IMPLEMENTATION
@@ -88,6 +90,81 @@ def d_hkl(h,k,l, a,b,c,alpha,beta,gamma):
 # scattering_factor
 # =========================
 
+## ===== Кривая рассеяния электронов (IT-параметризация) =======
+def f_el(stl: float, element_ID: str) -> float:
+  """
+  Рассчитывает функцию рассеяния электронов для заданного элемента и значения (sin θ)/λ.
+  
+  Parameters
+  ----------
+  stl (float): Угловой параметр (sin θ)/λ в обратных ангстремах (Å⁻¹).
+  element_ID (str): Идентификатор элемента, например, "Na", "Ca", "F".
+  
+  Returns
+  -------
+  float: Значение функции рассеяния электронов f_e в ангстремах (Å).
+  
+  Examples
+  -----
+  print("Функция рассеяния электронов f_el(1.5 Å⁻¹, Na) = %f Å"%(f_el(1.5, "Na")))
+  """
+  element=PARAM["elements"][element_ID]
+
+  f=0
+  f+=element["a1"]*math.exp(-element["b1"]*stl*stl)
+  f+=element["a2"]*math.exp(-element["b2"]*stl*stl)
+  f+=element["a3"]*math.exp(-element["b3"]*stl*stl)
+  f+=element["a4"]*math.exp(-element["b4"]*stl*stl)
+  f+=element["a5"]*math.exp(-element["b5"]*stl*stl)
+  return f
+
+
+## ========== Каппа-модель ==========
+
+def f_el_kmodel(stl, prefix_KPhase, atom_name, curves, **pars):
+  """
+  Вычисляет электронный атомный фактор рассеяния в рамках κ-модели
+  по формуле Мотта–Бете на основе параметров уточнения и табулированных
+  рентгеновских факторов для остова и валентных оболочек.
+
+  Parameters
+  ----------
+  stl : float or ndarray  ← Обратное расстояние (sinθ/λ) в Å⁻¹.
+  prefix_KPhase : str     ← Префикс, идентифицирующий фазу (например, 'Phase1_').
+  atom_name : str         ← Имя атома в структуре.
+  curves : dict           ← Словарь с интерполяционными данными для остова ('core') и валентных оболочек 
+                            (содержится в атрибуте объекта Atoms)
+  **pars : dict           ← Параметры сжатия κ и коэффициенты заселенности P для каждой оболочки
+                            (например, 'Phase1_Ca_4s_kappa', 'Phase1_Ca_4s_P').
+
+  Returns
+  -------
+  float or ndarray    ← Электронный атомный фактор рассеяния fₑ(k) в единицах атомных единиц.
+  """
+  full_prefix=prefix_KPhase+atom_name+'_'
+  a0     = 0.529177210544                           ## Боровский радиус a0 = 5.29177210544(82)⋅10^(−11) м = 0.529177210544(82) Å
+  factor = 1/(8*math.pi**2*a0)                      ## В единицах Å^(-1). Это коэффициент перед скобкой
+  element_ID = re.sub("[^A-Za-z]", "", atom_name)
+  Z = PARAM["elements"][element_ID]['Z']            ## Порядковый номер элемента
+
+  ## --- Остов ----
+  interpol_core = interp1d(curves['core']['x'],curves['core']['y'], kind='quadratic', fill_value="extrapolate")   # quadratic - сплайновая интерполяция второго порядка. fill_value - экстраполяция при выходе из диапазона stl_max (имеет место при kappa<1)
+  fe_x_core     = interpol_core(stl)                ## Фактор рассеяния для рентгена на остове
+  ## --- Валентные оболочки ----
+  P_fe_valence = 0
+  names_curves_valence = [k for k,v in curves.items() if k not in ['neutral atom', 'core']]
+  ## --- Сумма по оболочкам ----
+  for shell in names_curves_valence:
+    interpol_valence_subshells=interp1d(curves[shell]['x'],curves[shell]['y'], kind='quadratic', fill_value="extrapolate")
+    P     = pars[full_prefix+shell+'_P']
+    kappa = pars[full_prefix+shell+'_kappa']
+    fe_x_valence_subshell = interpol_valence_subshells(stl/kappa)    ## Фактор рассеяния для рентгена на валентной оболочке 4s
+    P_fe_valence += P*fe_x_valence_subshell                          ## Вклад в сумму для данной оболочки
+  fe_el = factor/stl**2*(Z-fe_x_core-P_fe_valence)                   ## Расчет фактора рассеяния для электронов по формуле Мотта-Бете
+  return fe_el
+
+
+
 
 # =========================
 # structure_factor
@@ -155,8 +232,24 @@ def compute_intensity(project_object, prefix_KPhase, h, k, l, stl, p, pars):
     raise ValueError(f"Не удалось вычислить амплитуду для {h,k,l}")
 
 
-#def intensity_hkl_legacy(...):      # бывший compute_ampl
-#def intensity_array_legacy(...):   # бывший Apml_calc
+
+def intensity_hkl(project_object, h, k, l, a, b, c, alpha, beta, gamma, λ, p,
+                   prefix_KPhase, **pars):
+    """ Амплитуда одного пика """
+    stl = 1 / (2 * d_hkl(h, k, l, a, b, c, alpha, beta, gamma)) if not h == k == l == 0 else 0
+    return compute_intensity(project_object, prefix_KPhase, h, k, l, stl, p, pars)
+
+
+def intensity_array(project_object, prefix_KPhase, **pars):
+    """ Сборка всех амплитуд """
+    cell_array      = [pars.get(prefix_KPhase+par) for par in ['a','b','c','alpha','beta','gamma']]
+    my_phase        = project_object.__dict__.get(prefix_KPhase.replace('_',''))              # Извлекаем фазу из проекта, чтобы получить форму и индексы рефлексов
+    λ               = my_phase.wavelength
+
+    Ampl_array_check=[]
+    for h, k, l, p in iterate_hkl(project_object, prefix_KPhase):
+      Ampl_array_check.append(intensity_hkl(project_object, h,k,l,  *cell_array,  λ, p, prefix_KPhase, **pars))
+    return Ampl_array_check
 
 
 # =========================

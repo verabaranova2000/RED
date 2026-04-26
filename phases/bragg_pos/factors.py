@@ -52,7 +52,7 @@ def calc_structural_factors(hkl_list, XYZ, a, b, c, alpha, beta, gamma, waveleng
       two_theta=2*math.asin(wavelength/(2*d_hkl(h,k,l, a,b,c,alpha,beta,gamma)))*180/math.pi     if not h==k==l==0 else 0
       #if two_theta<=two_theta_max:                                             # рассчитываем структурные амплитуды и заносим их в ячейку line[5]
       for j in range(len(XYZoccBiso_all)):
-        XYZoccBiso_all[j][5]=fe(stl,re.sub("[^A-Za-z]", "", XYZoccBiso_all[j][-1]))
+        XYZoccBiso_all[j][5]=f_el(stl,re.sub("[^A-Za-z]", "", XYZoccBiso_all[j][-1]))
       FF_hkl = F2_hkl(h,k,l,  a,b,c,alpha,beta,gamma, XYZoccBiso_all, Biso_overall=0)      # Квадрат структурной амплитуды
       F2_list.append(FF_hkl)
     return F2_list
