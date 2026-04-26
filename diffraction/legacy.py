@@ -292,7 +292,7 @@ def phase_profile(axes, project_object=None, KPhase=None, uvar=False, **pars):  
 
     Задаем функцию с ключевым словом (префикс 'Phase1_', например)
     """
-    assert KPhase is None
+    assert KPhase is not None
     prefix_KPhase = KPhase
 
     Biso_overall = pars.get(prefix_KPhase+'Biso_overall')
