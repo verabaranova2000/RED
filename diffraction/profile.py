@@ -8,13 +8,36 @@ from diffraction.geometry import two_theta_hkl_jax
 from utils.format import get_value
 
 
+"""
+JAX pipeline (vectorized)
+
+phase_profile_jax
+      │
+      ├── intensity_array_jax                 # (M,) амплитуды сразу для всех hkl
+      │       │
+      │       ├── F2_array_jax                # (M,) |F|² для всех hkl
+      │       │       └── F2_hkl_jax          # batch: (M,hkl) × (N_atoms)
+      │       │              └── Σ_atoms (j)     
+      │       │
+      │       ├── blackman_correction_jax   (vectorized)
+      │       └── Le Bail substitution      (mask)
+      │
+      ├── two_theta_hkl_jax                   # (M,) позиции всехпиков
+      │       └── d_hkl_jax
+      │
+      ├── sum_peak_profiles_jax               # (M,N) → (N,)
+      │       └── Σₕₖₗ + peak model (vmapped)
+      │
+      └── L_of_ring correction                # (N,)
+"""    
+
+
 # ---- Стеккер профиля ----
 def sum_peak_profiles_jax(axes, amps, mus, shape_params_dict, peak_model):
     """
     Вернёт суммарный профиль по всем рефлексам, shape (N,).
     shape_params_dict: {'σ': scalar or array(M,), 'η': ...}
     """
-
     # преобразуем словарь в список ключей и значений
     keys = list(shape_params_dict.keys())
     values = [shape_params_dict[k] for k in keys]
