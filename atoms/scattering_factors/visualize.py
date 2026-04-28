@@ -2,7 +2,7 @@ import numpy as np
 import gemmi
 import re
 import plotly.graph_objects as go
-from atoms.scattering_factors.parametric_factors import PARAM
+from atoms.scattering_factors.it4322_params import PARAM
 
 
 ## ===== Кривая рассеяния X-ray =====

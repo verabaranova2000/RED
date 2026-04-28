@@ -1,6 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+import jax.numpy as jnp
+
+
 """
 Модуль содержит таблицу параметров атомных факторов электронного рассеяния
 для химических элементов (Z = 1–98). Таблица оформлена в виде строки внутри
@@ -9,8 +13,37 @@
 Эл. Z Наименование Атомн.масса a[1]..a[5] b[1]..b[5]
 """
 
-from __future__ import print_function
-import math
+
+"""
+Atomic scattering parameters (IT4322)
+
+==================== STRUCTURE ====================
+
+PARAM["elements_table"]   (raw text)
+        │
+        ▼
+parse_elements_table()
+        │
+        ▼
+PARAM["elements"]   (dict)
+        │
+        ├── ['Z']
+        ├── ['M']
+        ├── ['a1..a5']
+        └── ['b1..b5']
+
+        │
+        ▼
+build_it4322_param_arrays()
+        │
+        ├── PARAM_A   (N_el, 5)
+        ├── PARAM_B   (N_el, 5)
+        ├── PARAM_M   (N_el,)
+        └── elem2idx  (dict)
+
+==================================================
+"""
+
 
 PARAM={}
 
@@ -118,66 +151,173 @@ Bk  97  берклий     247.070312   1.2915   3.1023   4.9309   4.6009   3.46
 Cf  98  калифорний  251.079600   1.2089   2.7391   4.3482   4.0047   4.6497   0.2421   1.7487   6.7262  23.2153  80.3108
 """
 
-print("Построение таблицы элементов")
+# print("Построение таблицы элементов")
 
-if "elements_table" in PARAM:
- elements_tmp=PARAM["elements_table"].split("\n")
- elements_tmp=map(lambda x: x.split(" "), elements_tmp)
- elements_tmp=map(lambda x: list(filter(lambda t: t!="", x)), elements_tmp)
+# if "elements_table" in PARAM:
+#  elements_tmp=PARAM["elements_table"].split("\n")
+#  elements_tmp=map(lambda x: x.split(" "), elements_tmp)
+#  elements_tmp=map(lambda x: list(filter(lambda t: t!="", x)), elements_tmp)
 
- elements_tmp=list(filter(lambda x: len(x)==14, elements_tmp))
+#  elements_tmp=list(filter(lambda x: len(x)==14, elements_tmp))
 
- elements_ID_list=list(map(lambda x: x[0], elements_tmp))
+#  elements_ID_list=list(map(lambda x: x[0], elements_tmp))
 
 
- elements_ID_set=set(elements_ID_list)
+#  elements_ID_set=set(elements_ID_list)
 
- if len(elements_ID_set)<len(elements_ID_list): # проверка уникальности элементов
-  for e in sorted(list(elements_ID_set)):
-   N=elements_ID_list.count(e)
-   if N>1:
-    print("Ошибка: химический элемент %s указан несколько раз (%d)."%(e,N))
+#  if len(elements_ID_set)<len(elements_ID_list): # проверка уникальности элементов
+#   for e in sorted(list(elements_ID_set)):
+#    N=elements_ID_list.count(e)
+#    if N>1:
+#     raise ValueError(f"Element {e} is duplicated ({N} times)")
+#     # print("Ошибка: химический элемент %s указан несколько раз (%d)."%(e,N))
 
- else:
-  elements_Z_list=list(map(lambda x: x[1], elements_tmp))
-  elements_Z_set=set(elements_Z_list)
+#  else:
+#   elements_Z_list=list(map(lambda x: x[1], elements_tmp))
+#   elements_Z_set=set(elements_Z_list)
 
-  if len(elements_Z_set)<len(elements_Z_list): # проверка уникальности элементов
-   for Z in sorted(list(elements_Z_set)):
-    N=elements_Z_list.count(Z)
-    if N>1:
-     err_list=filter(lambda x: x[1]==Z, elements_tmp)
-     err_list=map(lambda x: x[0], err_list)
-     print("Ошибка: № %s указан несколько раз (%d) для элементов %s."%(Z,N, ", ".join(err_list)))
+#   if len(elements_Z_set)<len(elements_Z_list): # проверка уникальности элементов
+#    for Z in sorted(list(elements_Z_set)):
+#     N=elements_Z_list.count(Z)
+#     if N>1:
+#      err_list=filter(lambda x: x[1]==Z, elements_tmp)
+#      err_list=map(lambda x: x[0], err_list)
+#      raise ValueError(f"Atomic number {Z} duplicated for elements {', '.join(err_list)}")
+#      #print("Ошибка: № %s указан несколько раз (%d) для элементов %s."%(Z,N, ", ".join(err_list)))
 
-  else: # всё в порядке, дубликатов в идентификаторах и номерах нет
+#   else: # всё в порядке, дубликатов в идентификаторах и номерах нет
 
-   PARAM["elements"]={}
+#    PARAM["elements"]={}
 
-   for e in elements_tmp:
+#    for e in elements_tmp:
 
-    ID=e[0]
+#     ID=e[0]
 
-    print("%s"%(ID), end=", ")
+#     # print("%s"%(ID), end=", ")
 
-    Z=int(e[1])
-    name=e[2]
-    M=float(e[3])
+#     Z=int(e[1])
+#     name=e[2]
+#     M=float(e[3])
 
-    a1=float(e[4])
-    a2=float(e[5])
-    a3=float(e[6])
-    a4=float(e[7])
-    a5=float(e[8])
+#     a1=float(e[4])
+#     a2=float(e[5])
+#     a3=float(e[6])
+#     a4=float(e[7])
+#     a5=float(e[8])
 
-    b1=float(e[9])
-    b2=float(e[10])
-    b3=float(e[11])
-    b4=float(e[12])
-    b5=float(e[13])
+#     b1=float(e[9])
+#     b2=float(e[10])
+#     b3=float(e[11])
+#     b4=float(e[12])
+#     b5=float(e[13])
 
-    PARAM["elements"][ID]={"Z":Z, "name":name, "M":M,   "a1":a1, "a2":a2, "a3":a3, "a4":a4, "a5":a5,   "b1":b1, "b2":b2, "b3":b3, "b4":b4, "b5":b5}
+#     PARAM["elements"][ID]={"Z":Z, "name":name, "M":M,   "a1":a1, "a2":a2, "a3":a3, "a4":a4, "a5":a5,   "b1":b1, "b2":b2, "b3":b3, "b4":b4, "b5":b5}
 
- print("")
- print("Всего химических элементов: %d"%(len(PARAM["elements"])))
- print("")
+#  assert len(PARAM["elements"]) == 98
+
+ #print("")
+ #print("Всего химических элементов: %d"%(len(PARAM["elements"])))
+ #print("")
+
+
+def parse_elements_table(elements_table: str) -> dict:
+    """
+    Парсит таблицу параметров атомных факторов рассеяния (IT4322).
+
+    Выполняет:
+    - разбор текстовой таблицы
+    - проверку уникальности элементов и атомных номеров
+    - формирование словаря элементов
+
+    Parameters
+    ----------
+    elements_table : str
+        Текст таблицы.
+
+    Returns
+    -------
+    dict
+        Словарь элементов:
+        {
+            'H': {'Z': ..., 'M': ..., 'a1..a5', 'b1..b5'},
+            ...
+        }
+    """
+    lines = elements_table.split("\n")
+    rows = [list(filter(None, line.split())) for line in lines]
+    rows = [r for r in rows if len(r) == 14]
+
+    elements = {}
+
+    ids = [r[0] for r in rows]
+    if len(ids) != len(set(ids)):
+        raise ValueError("Duplicate element symbols detected")
+
+    Zs = [r[1] for r in rows]
+    if len(Zs) != len(set(Zs)):
+        raise ValueError("Duplicate atomic numbers detected")
+
+    for r in rows:
+        ID = r[0]
+        elements[ID] = {
+            "Z": int(r[1]),
+            "name": r[2],
+            "M": float(r[3]),
+            "a1": float(r[4]), "a2": float(r[5]), "a3": float(r[6]),
+            "a4": float(r[7]), "a5": float(r[8]),
+            "b1": float(r[9]), "b2": float(r[10]), "b3": float(r[11]),
+            "b4": float(r[12]), "b5": float(r[13]),
+        }
+    if len(elements) != 98:
+        raise ValueError(f"Expected 98 elements, got {len(elements)}")
+    return elements
+
+PARAM["elements"] = parse_elements_table(PARAM["elements_table"])
+
+# ------ Подготовка для jit -------
+
+def build_it4322_param_arrays(PARAM):
+   """
+   Формирует массивы параметров IT4322 для JAX-вычислений.
+
+   На основе словаря PARAM["elements"] строит:
+   - PARAM_A : коэффициенты a1..a5, shape (N_el, 5)
+   - PARAM_B : коэффициенты b1..b5, shape (N_el, 5)
+   - PARAM_M : атомные массы, shape (N_el,)
+   - elem2idx: отображение символ элемента → индекс
+
+   Элементы упорядочиваются по возрастанию атомного номера Z.
+
+   Параметры
+   ----------
+   PARAM : dict
+       Словарь с ключом "elements", содержащим параметры элементов.
+
+   Возвращает
+   -------
+   PARAM_A : jnp.ndarray
+   PARAM_B : jnp.ndarray
+   PARAM_M : jnp.ndarray
+   elem2idx : dict
+   """      
+   elements_list = sorted(PARAM["elements"].keys(),                     ## список элементов по возрастанию атомного номера Z
+                       key=lambda el: PARAM["elements"][el]["Z"])
+   elem2idx = {el: i for i, el in enumerate(elements_list)}             ## отображение символ → индекс.
+   A_list = []
+   B_list = []
+   M_list = []
+   for el in elements_list:
+      e = PARAM['elements'][el]
+      A_list.append([e['a1'], e['a2'], e['a3'], e['a4'], e['a5']])
+      B_list.append([e['b1'], e['b2'], e['b3'], e['b4'], e['b5']])
+      M_list.append(e['M'])   # атомная масса
+   PARAM_A = jnp.array(A_list, dtype=jnp.float64)  # shape (N_el, 5)
+   PARAM_B = jnp.array(B_list, dtype=jnp.float64)  # shape (N_el, 5)
+   PARAM_M = jnp.array(M_list, dtype=jnp.float64)  # (N_el,)
+   return PARAM_A, PARAM_B, PARAM_M, elem2idx
+
+PARAM_A, PARAM_B, PARAM_M, elem2idx = build_it4322_param_arrays(PARAM)
+
+#print("")
+#print(f"Построены PARAM_A, PARAM_B, PARAM_M  | shape {PARAM_A.shape},  {PARAM_B.shape},  {PARAM_M.shape}")
+#print("")

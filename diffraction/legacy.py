@@ -6,7 +6,7 @@ from atoms.generate import get_all_positions_in_cell_for_atom
 from phases.models import models_dict, par_form_dict
 from phases.params import FORM, hkl_to_str
 from scipy.interpolate import interp1d
-from atoms.scattering_factors.parametric_factors import PARAM
+from atoms.scattering_factors.it4322_params import PARAM
 
 """
 LEGACY IMPLEMENTATION (non-JAX)
